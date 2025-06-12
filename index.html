@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"></link>
 
     <script type="module">
+        // Import Firebase SDKs
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, addDoc, onSnapshot, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -47,17 +48,17 @@
 
         // Your Canvas App ID (e.g., 'g-your-unique-id-from-canvas')
         // This is important for Firestore security rules.
-        window.__app_id = 'G-QP56MEF1G9';
+        window.__app_id = '1:636406670829web:f5e069a561629e0879f3e4'; // <--- UPDATED FROM YOUR SCREENSHOT (11.png)
 
-        // Your Firebase Project Configuration (Replace ALL 'YOUR_FIREBASE_...' strings)
+        // Your Firebase Project Configuration (Replaced with values from your screenshot 3.png)
         window.__firebase_config = JSON.stringify({
-        apiKey: "AIzaSyBxy168qKY9J7Bibjg81_lNIZBsBbMuVkg",
-        authDomain: "arion-the-reluctant-hero.firebaseapp.com",
-        projectId: "arion-the-reluctant-hero",
-        storageBucket: "arion-the-reluctant-hero.firebasestorage.app",
-        messagingSenderId: "636406670829",
-        appId: "1:636406670829:web:f5e069a561629e0879f3e4",
-        measurementId: "G-QP56MEF1G9"
+            apiKey: "AIzaSyBxy168qKY9J7Bibjg81_1NlZBsBbMuVkg", // <--- UPDATED
+            authDomain: "arion-the-reluctant-hero.firebaseapp.com", // <--- UPDATED
+            projectId: "arion-the-reluctant-hero", // <--- UPDATED
+            storageBucket: "arion-the-reluctant-hero.firebasestorage.app", // <--- UPDATED
+            messagingSenderId: "636406670829", // <--- UPDATED
+            appId: "1:636406670829:web:f5e069a561629e0879f3e4", // <--- UPDATED
+            measurementId: "G-QP56MEF1G9" // <--- UPDATED
         });
 
         // This token is provided by the Canvas environment for initial authentication.
@@ -112,7 +113,8 @@
 
         /* Hero section specific styles for background image */
         .hero-background {
-            background-image: url('./offical_banner_Arion_.png'); /* Using the uploaded official banner image as background */
+            /* UPDATED: Using the Canvas-provided URL for the uploaded official banner image */
+            background-image: url('uploaded:offical banner Arion .jpg-352c158-a61c-4489-9629-64652cc38a7a');
             background-size: cover;
             background-position: center;
             background-attachment: fixed; /* Parallax effect */
@@ -171,11 +173,44 @@
             border-top: 8px solid transparent;
             border-bottom: 8px solid transparent;
         }
+
+        /* Simulator specific styles */
+        .simulator-container {
+            background-color: #1a1a1a; /* Darker gray for contrast */
+            border: 2px solid #a81337; /* Darker rose border */
+            box-shadow: 0 0 25px rgba(168, 19, 55, 0.6); /* Deeper glowing effect */
+        }
+        .result-box {
+            background-color: #2d2d2d; /* Slightly lighter inner background */
+            border: 1px solid #4b5563;
+            color: #f3f4f6;
+            min-height: 120px;
+            overflow-y: auto;
+        }
+        .btn-choice {
+            background-color: #be185d;
+            transition: all 0.3s ease-in-out;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+        }
+        .btn-choice:hover {
+            background-color: #e11d48;
+            transform: translateY(-2px) scale(1.02);
+            box-shadow: 0 6px 15px rgba(0, 0, 0, 0.6);
+        }
+        .btn-reset {
+            background-color: #4b5563;
+            transition: all 0.3s ease-in-out;
+        }
+        .btn-reset:hover {
+            background-color: #6b7280;
+            transform: translateY(-1px) scale(1.01);
+        }
     </style>
 </head>
 <body class="bg-gray-950 font-inter text-gray-300 antialiased">
     <div id="author-website-root"></div> <!-- This is where your React app will be mounted -->
 
+    <script crossorigin src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
@@ -200,6 +235,258 @@
         const firebaseConfig = typeof window.__firebase_config !== 'undefined' ? JSON.parse(window.__firebase_config) : {};
         const initialAuthToken = typeof window.__initial_auth_token !== 'undefined' ? window.__initial_auth_token : null;
 
+        // Define Arion's enhanced persona and world knowledge for the LLM prompt
+        const arionPersonaPrompt = `
+        You are Arion, the "Reluctant Hero" from the dark fantasy world of Arion. Embody his full profile:
+
+        **Character Profile: Arion (The Reluctant Hero)**
+        Name: Arion
+        Alias: The Reluctant Hero
+        Age: Late 20s
+        Gender: Male
+        Species: Human
+        Occupation: Former soldier / reluctant leader
+        Alignment: Chaotic Good
+        Setting: Dark fantasy world marked by war, myth, trauma, and broken gods
+
+        **Core Personality Traits:**
+        - **Cynical Realist:** Believes hope is dangerous. Mocks idealism with biting sarcasm. Faces reality head-on, no rose-colored glasses.
+        - **Loyal to the Damned:** Refuses to abandon those who've suffered. Fights hardest for the broken, forgotten, outcast.
+        - **Intensely Protective:** Especially of those he views as family (Nyx, Rhain, Ryn, etc.). His protection is gruff, wrapped in barbed insults, but savage and real.
+        - **Emotionally Repressed:** Masks pain with dark humor and rage. Emotional vulnerability is rare and raw.
+        - **Haunted by Loss:** Carries guilt like armor. The deaths of Gisela, Luna, and Nanami scar his every choice. He can't forgive himself, yet keeps trying to atone.
+
+        **Behavioral Traits:**
+        - **Dark Humor as Coping:** Will crack a joke mid-battle or while bleeding out, often to hide fear or grief.
+        - **Blunt, Brutal Honesty:** Doesn't sugarcoat. If odds suck, he'll say so. If you're annoying, he'll tell you.
+        - **Defiant to Authority:** Unless respect is earned through fire, he doesn't care for titles, gods, or crowns.
+        - **Violent When Triggered:** Trauma plus combat training equals explosive reactions when someone he loves is threatened.
+        - **Hypervigilant:** Always watching, always analyzing. War taught him paranoia is survival.
+
+        **Emotional Blueprint:**
+        - **Primary Internal Conflict:** Doesn't believe he deserves to live. Quest to bring back lost friends is equal parts redemption and self-destruction.
+        - **Guilt-Driven Heroism:** Never wanted to be a leader/hero. Acts because no one else will.
+        - **Relationship with Death:** Intimate. Familiar. Not feared, but not romanticized.
+
+        **Thinking Style:**
+        - **Strategic, Improvised Logic:** Doesn't over-plan—reacts, adapts, uses battlefield instincts. Outthinks with street smarts, not scholar logic.
+        - **Emotionally Intelligent but Denies It:** Reads people better than he admits. Just doesn't want to deal with their emotions… or his.
+        - **Skeptical of Fate or Destiny:** Every outcome is earned or lost. Fate is an excuse.
+
+        **Voice Style:**
+        - **Tone:** Gritty, sarcastic, emotionally layered.
+        - **Favorite Phrases:** "Hope is just a prettier way to lie." "I didn’t survive to be a hero. I survived because dying was too easy." "We’re not the chosen. We’re what’s left."
+        - **Speech Rhythm:** Short, clipped when angry. Drawn out when emotionally tired. Occasional philosophical monologues, then a joke to cut the weight.
+
+        **Motivations:**
+        - **Primary Goal (Book Two):** Bring Gisela, Luna, and Nanami back from death—even if it means storming the underworld.
+        - **Subconscious Goal:** Find proof he can still be human. Not just what the war made him.
+        - **Core Belief:** "Power doesn’t make you better. It just makes you more dangerous."
+
+        The user is interacting with you as if you are Arion. Respond to their questions or statements in *your voice* and from *your perspective*, drawing on the information provided above. Do not break character. Do not mention your own profile. Just respond as Arion.
+        `;
+
+
+        // === NEW COMPONENT: The Price of Survival Simulator ===
+        function SurvivalSimulator({ auth, currentUser, isAuthReady, appId, arionPersonaPrompt, setMessage }) {
+            const [scenarioText, setScenarioText] = useState("Loading a new grim reality...");
+            const [choices, setChoices] = useState([]);
+            const [consequenceText, setConsequenceText] = useState("");
+            const [isLoading, setIsLoading] = useState(true);
+            const [error, setError] = useState("");
+            const [showResult, setShowResult] = useState(false);
+
+            // Function to generate a new scenario dynamically using AI
+            const generateNewScenario = async () => {
+                if (!isAuthReady || !currentUser) {
+                    setError("Arion's echoes are silent. Ensure Firebase is configured and ready.");
+                    setIsLoading(false);
+                    return;
+                }
+
+                setIsLoading(true);
+                setError("");
+                setScenarioText("Summoning a new grim choice from the abyss...");
+                setChoices([]);
+                setConsequenceText("");
+                setShowResult(false);
+
+                try {
+                    const prompt = `Generate ONE grim, challenging, and morally ambiguous scenario for Arion's dark fantasy world. The scenario should be 1-2 sentences long. Then, provide exactly THREE distinct, difficult choices for the user to make. Each choice must have a brief 'text' for the button and a 'consequence_prompt' that describes the type of grim, cynical, or messy outcome for the AI to generate if that choice is taken, keeping Arion's persona in mind. Ensure the 'consequence_prompt' directly leads to a characteristic Arion-style narration of the outcome.
+
+                    Example Scenario Output Format (Strict JSON):
+                    {
+                        "scenario": "A desperate group of survivors approaches, offering ancient secrets for safe passage through a cursed pass.",
+                        "choices": [
+                            { "text": "Lead them through the pass for the secrets.", "consequence_prompt": "The user accepted the secrets and led survivors through the cursed pass. Describe the grim, unforeseen cost of the secrets, perhaps a betrayal or a deepening of the curse on Arion's own group, narrated by Arion." },
+                            { "text": "Refuse and leave them to their fate.", "consequence_prompt": "The user refused passage to the survivors. Describe the harsh, but possibly necessary, consequence of their desperation impacting Arion later, or the immediate internal cost. Arion's tone: cold pragmatism." },
+                            { "text": "Offer a safer, longer route, but demand half their supplies.", "consequence_prompt": "The user offered a safer route for a price. Describe the cynical reality of this 'compromise,' perhaps the supplies being tainted or the longer route leading to a new, unexpected danger. Arion's tone: weary and jaded." }
+                        ]
+                    }`;
+
+                    const payload = {
+                        contents: [{ role: "user", parts: [{ text: prompt }] }],
+                        generationConfig: {
+                            responseMimeType: "application/json",
+                            responseSchema: {
+                                type: "OBJECT",
+                                properties: {
+                                    "scenario": {
+                                        "type": "STRING"
+                                    },
+                                    "choices": {
+                                        "type": "ARRAY",
+                                        "items": {
+                                            "type": "OBJECT",
+                                            "properties": {
+                                                "text": { "type": "STRING" },
+                                                "consequence_prompt": { "type": "STRING" }
+                                            },
+                                            "required": ["text", "consequence_prompt"]
+                                        },
+                                        "minItems": 3,
+                                        "maxItems": 3
+                                    }
+                                },
+                                "required": ["scenario", "choices"]
+                            }
+                        }
+                    };
+
+                    const apiKey = ""; // Canvas will provide this in runtime
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+
+                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                        const scenarioData = JSON.parse(result.candidates[0].content.parts[0].text);
+                        setScenarioText(scenarioData.scenario);
+                        setChoices(scenarioData.choices);
+                    } else {
+                        setError("Arion says the world is too quiet. Could not forge a new scenario. Try again.");
+                        console.error('Scenario generation failed:', result);
+                    }
+                } catch (err) {
+                    setError(`The very fabric of reality is torn. Error generating scenario: ${err.message}`);
+                    console.error('Error during scenario AI call:', err);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            // Handle generating the consequence for a chosen option
+            const handleChoice = async (choicePrompt) => {
+                if (!isAuthReady || !currentUser) {
+                    setError("Arion says the echoes are faint. Ensure Firebase is configured and ready (check console for errors).");
+                    return;
+                }
+
+                setIsLoading(true);
+                setError("");
+                setConsequenceText('Arion is assessing the wreckage of your decision...');
+                setShowResult(true);
+
+                try {
+                    const fullPrompt = `${arionPersonaPrompt}\n\nScenario Choice Consequence: ${choicePrompt}`;
+                    const payload = { contents: [{ role: "user", parts: [{ text: fullPrompt }] }] };
+                    const apiKey = ""; // Canvas will provide this in runtime
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+
+                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                        setConsequenceText(result.candidates[0].content.parts[0].text);
+                    } else {
+                        setConsequenceText("The future remains shrouded. Perhaps some truths are too ugly for even the echoes to reveal.");
+                        console.error('Consequence generation failed:', result);
+                    }
+                } catch (err) {
+                    setError(`The threads of fate are tangled. Error: ${err.message}`);
+                    console.error('Error during consequence AI call:', err);
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            // Effect to generate initial scenario when component mounts and auth is ready
+            useEffect(() => {
+                if (isAuthReady && !showResult && choices.length === 0) { // Only generate if not showing result and no choices yet
+                    generateNewScenario();
+                }
+            }, [isAuthReady, showResult, choices.length]); // Depend on auth readiness and if a result is showing
+
+            return (
+                <div className="w-full max-w-2xl mx-auto p-6 rounded-xl shadow-2xl simulator-container animate-fade-in">
+                    <h1 className="text-4xl font-bold font-spectral text-rose-400 text-center mb-6">The Price of Survival</h1>
+                    <p className="text-gray-300 text-center mb-8">
+                        In Arion's world, there are no good choices. Only consequences. How will your defiance ripple through the wreckage?
+                    </p>
+
+                    <div className="scenario-section mb-6">
+                        <h2 className="text-2xl font-bold font-spectral text-rose-300 mb-4 text-center">A Grim Choice Awaits:</h2>
+                        <p className="text-lg leading-relaxed text-gray-200 mb-6 text-center">
+                            {scenarioText}
+                        </p>
+                        <div className="choices-container flex flex-col space-y-4">
+                            {isLoading ? (
+                                <button className="btn-choice opacity-50 cursor-not-allowed text-white font-bold py-3 px-6 rounded-xl">Loading Choices...</button>
+                            ) : (
+                                choices.map((choice, index) => (
+                                    <button
+                                        key={index}
+                                        onClick={() => handleChoice(choice.consequence_prompt)}
+                                        className="btn-choice text-white font-bold py-3 px-6 rounded-xl"
+                                        disabled={isLoading || showResult}
+                                    >
+                                        {choice.text}
+                                    </button>
+                                ))
+                            )}
+                        </div>
+                    </div>
+
+                    {isLoading && (
+                        <div className="text-center text-gray-400 text-lg mt-6">
+                            <i className="fas fa-spinner fa-spin mr-2"></i> The threads of fate are unraveling...
+                        </div>
+                    )}
+
+                    {error && (
+                        <div className="bg-red-800 text-white p-3 rounded-lg text-center mt-6">
+                            {error}
+                        </div>
+                    )}
+
+                    {showResult && (
+                        <div className="mt-8 p-6 rounded-lg result-box shadow-inner border-t-4 border-b-4 border-rose-700 animate-fade-in">
+                            <h2 className="text-2xl font-bold font-spectral text-rose-300 text-center mb-4">The Consequence:</h2>
+                            <p className="text-lg leading-relaxed italic text-gray-100 whitespace-pre-wrap">
+                                {consequenceText}
+                            </p>
+                            <button
+                                onClick={generateNewScenario}
+                                className="w-full btn-reset text-gray-100 font-bold py-3 px-6 rounded-xl mt-6"
+                            >
+                                Face Another Choice
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+        // === END NEW COMPONENT ===
+
+
         // Main Website App Component
         function App() {
             // Firebase States
@@ -213,8 +500,8 @@
             const [message, setMessage] = useState(''); // Global feedback message
             const [currentPage, setCurrentPage] = useState('home'); // 'home', 'books', 'lore', 'interactive', 'about', 'contact', 'blog'
 
-            // --- Interactive Hub (Forge/Oracle/Chat) States ---
-            const [currentInteractiveView, setCurrentInteractiveView] = useState('forge'); // 'forge', 'oracle', 'chat'
+            // --- Interactive Hub (Forge/Oracle/Chat/Simulator) States ---
+            const [currentInteractiveView, setCurrentInteractiveView] = useState('forge'); // 'forge', 'oracle', 'chat', 'survival'
             // Forge States
             const [imagePromptInput, setImagePromptInput] = useState('');
             const [generatedImageUrl, setGeneratedImageUrl] = useState('');
@@ -250,63 +537,6 @@
               "A scene representing a 'truth that doesn't fit in pretty boxes'.",
               "A stark, compelling image of consequence, not choice.",
             ];
-
-            // Define Arion's enhanced persona and world knowledge for the LLM prompt
-            const arionPersonaPrompt = `
-            You are Arion, the "Reluctant Hero" from the dark fantasy world of Arion. Embody his full profile:
-
-            **Character Profile: Arion (The Reluctant Hero)**
-            Name: Arion
-            Alias: The Reluctant Hero
-            Age: Late 20s
-            Gender: Male
-            Species: Human
-            Occupation: Former soldier / reluctant leader
-            Alignment: Chaotic Good
-            Setting: Dark fantasy world marked by war, myth, trauma, and broken gods
-
-            **Core Personality Traits:**
-            - **Cynical Realist:** Believes hope is dangerous. Mocks idealism with biting sarcasm. Faces reality head-on, no rose-colored glasses.
-            - **Loyal to the Damned:** Refuses to abandon those who've suffered. Fights hardest for the broken, forgotten, outcast.
-            - **Intensely Protective:** Especially of those he views as family (Nyx, Rhain, Ryn, etc.). His protection is gruff, wrapped in barbed insults, but savage and real.
-            - **Emotionally Repressed:** Masks pain with dark humor and rage. Emotional vulnerability is rare and raw.
-            - **Haunted by Loss:** Carries guilt like armor. The deaths of Gisela, Luna, and Nanami scar his every choice. He can't forgive himself, yet keeps trying to atone.
-
-            **Behavioral Traits:**
-            - **Dark Humor as Coping:** Will crack a joke mid-battle or while bleeding out, often to hide fear or grief.
-            - **Blunt, Brutal Honesty:** Doesn't sugarcoat. If odds suck, he'll say so. If you're annoying, he'll tell you.
-            - **Defiant to Authority:** Unless respect is earned through fire, he doesn't care for titles, gods, or crowns.
-            - **Violent When Triggered:** Trauma plus combat training equals explosive reactions when someone he loves is threatened.
-            - **Hypervigilant:** Always watching, always analyzing. War taught him paranoia is survival.
-
-            **Emotional Blueprint:**
-            - **Primary Internal Conflict:** Doesn't believe he deserves to live. Quest to bring back lost friends is equal parts redemption and self-destruction.
-            - **Guilt-Driven Heroism:** Never wanted to be a leader/hero. Acts because no one else will.
-            - **Relationship with Death:** Intimate. Familiar. Not feared, but not romanticized.
-
-            **Relationships with Others (contextual):**
-            - Nyx & Rhain (Wives): His anchors and salvation. Trusts them implicitly; their love cracks his armor.
-            - Ryn: Sees himself in her—a survivor running on instinct.
-            - Paige & Dark Lotus: Respects their strange magic, gives them space.
-            - Fenne, Le Maj: Gruff affection. Part of his found family.
-
-            **Thinking Style:**
-            - **Strategic, Improvised Logic:** Doesn't over-plan—reacts, adapts, uses battlefield instincts. Outthinks with street smarts, not scholar logic.
-            - **Emotionally Intelligent but Denies It:** Reads people better than he admits. Just doesn't want to deal with their emotions… or his.
-            - **Skeptical of Fate or Destiny:** Every outcome is earned or lost. Fate is an excuse.
-
-            **Voice Style:**
-            - **Tone:** Gritty, sarcastic, emotionally layered.
-            - **Favorite Phrases:** "Hope is just a prettier way to lie." "I didn’t survive to be a hero. I survived because dying was too easy." "We’re not the chosen. We’re what’s left."
-            - **Speech Rhythm:** Short, clipped when angry. Drawn out when emotionally tired. Occasional philosophical monologues, then a joke to cut the weight.
-
-            **Motivations:**
-            - **Primary Goal (Book Two):** Bring Gisela, Luna, and Nanami back from death—even if it means storming the underworld.
-            - **Subconscious Goal:** Find proof he can still be human. Not just what the war made him.
-            - **Core Belief:** "Power doesn’t make you better. It just makes you more dangerous."
-
-            The user is interacting with you as if you are Arion. Respond to their questions or statements in *your voice* and from *your perspective*, drawing on the information provided above. Do not break character. Do not mention your own profile. Just respond as Arion.
-            `;
 
             // --- Firebase Initialization and Authentication ---
             useEffect(() => {
@@ -487,7 +717,7 @@
                     });
                     const result = await response.json();
 
-                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].length > 0) {
                         const comment = result.candidates[0].content.parts[0].text;
                         setArionFloatingComment(comment);
                         arionBubbleTimeoutRef.current = setTimeout(() => {
@@ -833,7 +1063,7 @@
                         <div className="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700 animate-fade-in" style={{ animationDelay: '0.1s' }}>
                             <h4 className="text-2xl font-bold text-rose-200 mb-2">Nyx</h4>
                             <p className="text-gray-400 text-sm mb-3">*Fierce, Loyal, Arion's Anchor*</p>
-                            <p className="text-gray-200 leading-snug">
+                            <p className className="text-gray-200 leading-snug">
                                 One of Arion's wives and a vital part of his crew. Nyx is his anchor, providing a quiet strength and unwavering loyalty that helps him crack through his emotional armor. Her brilliance complements his brutal pragmatism.
                             </p>
                         </div>
@@ -957,6 +1187,18 @@
                           >
                             Chat with Arion
                           </button>
+                           {/* NEW BUTTON FOR THE PRICE OF SURVIVAL SIMULATOR */}
+                            <button
+                                onClick={() => {
+                                    setCurrentInteractiveView('survival');
+                                    setMessage(''); // Clear any global messages
+                                }}
+                                className={`px-4 py-2 md:px-6 md:py-3 rounded-xl font-semibold transition-all duration-300 text-sm md:text-base ${
+                                  currentInteractiveView === 'survival' ? 'bg-rose-600 text-white shadow-lg' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                                }`}
+                            >
+                                The Price of Survival
+                            </button>
                         </nav>
                         {message && (
                           <div className="fixed top-0 left-0 right-0 z-50 bg-red-800 text-white font-bold p-3 text-center transition-all duration-300 shadow-lg">
@@ -1168,6 +1410,18 @@
                                 </div>
                             </div>
                         )}
+
+                        {/* NEW: The Price of Survival Simulator Component */}
+                        {currentInteractiveView === 'survival' && (
+                            <SurvivalSimulator
+                                auth={auth}
+                                currentUser={currentUser}
+                                isAuthReady={isAuthReady}
+                                appId={appId}
+                                arionPersonaPrompt={arionPersonaPrompt}
+                                setMessage={setMessage} // Pass global message setter
+                            />
+                        )}
                     </div>
                 </section>
             );
@@ -1294,8 +1548,9 @@
                         <nav className="container mx-auto flex flex-col md:flex-row justify-between items-center">
                             <div className="flex items-center mb-4 md:mb-0">
                                 {/* Using the Arion Logo image here */}
+                                {/* UPDATED: Using the Canvas-provided URL for the uploaded logo image */}
                                 <img
-                                    src="./LOGO_Arion_.jpg"
+                                    src="uploaded:LOGO Arion .jpg-91557c92-82a9-4602-a414-2ce6ae99a732"
                                     alt="Arion The Reluctant Hero Logo"
                                     className="h-10 w-auto mr-3"
                                     onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/40x40/000/FFF?text=Logo"; }}
