@@ -35,8 +35,7 @@
         // === CRITICAL CONFIGURATION: REPLACE THESE PLACEHOLDER VALUES WITH YOUR ACTUAL FIREBASE CREDENTIALS! ===
         // =====================================================================================================
 
-        // FirebaseError: Firebase: Error (auth/api-key-not-valid.-please-pass-a-valid-api-key.).
-        // This error means you HAVE NOT replaced the placeholder values below with your real Firebase project details.
+        // Firebase Error (auth/api-key-not-valid): This error means you HAVE NOT replaced the placeholder values below with your real Firebase project details.
         // Follow these steps to get your correct Firebase Configuration:
         // 1. Go to your Firebase Console: https://console.firebase.google.com/
         // 2. Select your project (create one if you haven't).
@@ -175,7 +174,9 @@
     </style>
 </head>
 <body class="bg-gray-950 font-inter text-gray-300 antialiased">
-    <div id="author-website-root"></div> <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <div id="author-website-root"></div> <!-- This is where your React app will be mounted -->
+
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
 
     <script type="text/babel">
@@ -192,7 +193,7 @@
             onSnapshot,
             collection,
             serverTimestamp
-        } = window.firebaseModule; // Access Firebase functions through the global bridge
+         } = window.firebaseModule; // Access Firebase functions through the global bridge
 
         // Global variables for Firebase config and app ID, sourced from the HTML <script> tags
         const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
@@ -252,7 +253,7 @@
 
             // Define Arion's enhanced persona and world knowledge for the LLM prompt
             const arionPersonaPrompt = `
-            You are Arion, the "Reluctant Hero" from the dark fantasy world of Aeloria. Embody his full profile:
+            You are Arion, the "Reluctant Hero" from the dark fantasy world of Arion. Embody his full profile:
 
             **Character Profile: Arion (The Reluctant Hero)**
             Name: Arion
@@ -311,16 +312,33 @@
             useEffect(() => {
                 const initializeFirebase = async () => {
                     try {
-                        // Validate Firebase config before initializing
+                        // --- EXPLICITLY CHECK FOR PLACEHOLDER VALUES ---
+                        let hasPlaceholder = false;
                         if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_FIREBASE_API_KEY") {
-                            setMessage("CRITICAL ERROR: Firebase API Key is missing or still a placeholder. Please update 'window.__firebase_config' in the HTML <head> section with your actual Firebase project credentials.");
+                            setMessage("🚨 CRITICAL ERROR: Firebase API Key is missing or still a placeholder. See HTML instructions.");
                             console.error("Firebase config error: apiKey is missing or placeholder.");
-                            return; // Stop initialization
+                            hasPlaceholder = true;
+                        }
+                        if (!firebaseConfig.authDomain || firebaseConfig.authDomain === "YOUR_FIREBASE_AUTH_DOMAIN") {
+                            setMessage("🚨 CRITICAL ERROR: Firebase Auth Domain is missing or still a placeholder. See HTML instructions.");
+                            console.error("Firebase config error: authDomain is missing or placeholder.");
+                            hasPlaceholder = true;
+                        }
+                        if (!firebaseConfig.projectId || firebaseConfig.projectId === "YOUR_FIREBASE_PROJECT_ID") {
+                            setMessage("🚨 CRITICAL ERROR: Firebase Project ID is missing or still a placeholder. See HTML instructions.");
+                            console.error("Firebase config error: projectId is missing or placeholder.");
+                            hasPlaceholder = true;
                         }
                         if (!appId || appId === "YOUR_CANVAS_APP_ID") {
-                             setMessage("CRITICAL ERROR: Canvas App ID is missing or still a placeholder. Please update 'window.__app_id' in the HTML <head> section.");
+                             setMessage("🚨 CRITICAL ERROR: Canvas App ID is missing or still a placeholder. See HTML instructions.");
                              console.error("Firebase config error: Canvas App ID is missing or placeholder.");
-                             return; // Stop initialization
+                             hasPlaceholder = true;
+                        }
+
+                        if (hasPlaceholder) {
+                            // If any placeholder is found, stop Firebase initialization.
+                            // The error message is already set.
+                            return;
                         }
 
                         // Use initializeApp directly from the imported module
@@ -338,10 +356,12 @@
                                 setCurrentUser(user);
                                 setUserId(user.uid);
                                 console.log("Firebase Auth State Changed: User signed in", user.uid);
+                                setMessage(''); // Clear message on successful auth
                             } else {
                                 if (!initialAuthToken) {
                                     await signInAnonymously(firebaseAuth);
                                     console.log("Firebase Auth State Changed: Signed in anonymously");
+                                    setMessage(''); // Clear message on successful auth
                                 }
                             }
                             setIsAuthReady(true);
@@ -350,12 +370,13 @@
                         if (initialAuthToken) {
                             await signInWithCustomToken(firebaseAuth, initialAuthToken);
                             console.log("Firebase: Signed in with custom token.");
+                            setMessage(''); // Clear message on successful auth
                         }
 
                         return () => unsubscribe();
                     } catch (error) {
                         console.error("Error initializing Firebase or signing in:", error);
-                        setMessage(`Error: ${error.message}. Please ensure your Firebase configuration is correct.`);
+                        setMessage(`❌ Firebase Initialization Failed: ${error.message}. DOUBLE-CHECK your Firebase config in HTML.`);
                     }
                 };
 
@@ -363,7 +384,7 @@
                 if (Object.keys(firebaseConfig).length > 0 && !db) {
                     initializeFirebase();
                 } else if (Object.keys(firebaseConfig).length === 0) {
-                    setMessage("Firebase configuration object is empty. Please check the HTML setup instructions carefully.");
+                    setMessage("🚨 CRITICAL ERROR: Firebase configuration object is empty. Please check the HTML setup instructions carefully.");
                 }
             }, [db, firebaseConfig, initialAuthToken, appId]);
 
@@ -581,7 +602,7 @@
                 setMessage('The Oracle is sifting through the echoes... please wait.');
 
                 try {
-                    const prompt = `You are the Oracle of Echoes in a dark fantasy world of Aeloria, known for its ruins, struggles, and reluctant heroes. Your responses are cryptic, poetic, and often hint at deeper truths or consequences, never giving direct answers. They reflect the themes of pain, survival, and the weight of fate. Avoid being overly positive or explicitly hopeful. Focus on raw, unvarnished truths and the consequences of actions.
+                    const prompt = `You are the Oracle of Echoes in a dark fantasy world of Arion, known for its ruins, struggles, and reluctant heroes. Your responses are cryptic, poetic, and often hint at deeper truths or consequences, never giving direct answers. They reflect the themes of pain, survival, and the weight of fate. Avoid being overly positive or explicitly hopeful. Focus on raw, unvarnished truths and the consequences of actions.
                    
                     User's question: "${oracleQuestion}"
                    
@@ -630,7 +651,7 @@
 
                 const newUserMessage = { role: "user", text: userMessage };
                 setChatHistory((prev) => [...prev, newUserMessage]);
-                setUserMessage('');
+                setUserMessage(''); // Clear input immediately
                 setIsSendingMessage(true);
                 setMessage('Arion is probably rolling his eyes... just a moment.');
 
@@ -685,7 +706,7 @@
                 <section className="main-content-area hero-background min-h-screen flex items-center justify-center text-center p-4">
                     <div className="bg-gray-900 bg-opacity-80 rounded-xl p-8 md:p-12 shadow-2xl max-w-3xl animate-fade-in border border-gray-700">
                         <h2 className="text-5xl md:text-7xl font-bold font-spectral text-rose-500 mb-6 leading-tight">
-                            J. Murphy Presents: <br/> The World of Aeloria
+                            J. Murphy Presents: <br/> Welcome to the world of Arion
                         </h2>
                         <p className="text-xl md:text-2xl text-gray-200 mb-8 max-w-2xl mx-auto">
                             Dive into a dark fantasy saga where hope is dangerous, gods are broken, and heroes are forged from the wreckage.
@@ -711,7 +732,7 @@
             // Books Page Component
             const BooksPage = () => (
                 <section className="main-content-area container mx-auto p-4 md:p-8 py-12">
-                    <h2 className="text-4xl font-bold font-spectral text-center text-rose-400 mb-12">The Chronicles of Aeloria</h2>
+                    <h2 className="text-4xl font-bold font-spectral text-center text-rose-400 mb-12">The Chronicles of Arion</h2>
 
                     {/* Book 1: Shadows of the Ancient */}
                     <div className="bg-gray-800 rounded-xl shadow-lg p-6 md:p-10 mb-12 flex flex-col md:flex-row items-center animate-fade-in border border-gray-700">
@@ -763,7 +784,7 @@
                     <div className="bg-gray-800 rounded-xl shadow-lg p-6 md:p-10 border border-gray-700 text-center animate-fade-in">
                         <h3 className="text-3xl font-bold font-spectral text-rose-300 mb-4">Future Stories & Side Adventures</h3>
                         <p className="text-gray-200 leading-relaxed mb-6">
-                            The saga of Aeloria is far from over. New battles await, untold histories whisper from the ruins, and the Midnight Brew continues to carve its path through a broken world. Stay tuned for details on Book Three, "Echoes of the Undying," and various side stories exploring the lives and struggles of Arion's crew.
+                            The saga of Arion is far from over. New battles await, untold histories whisper from the ruins, and the Midnight Brew continues to carve its path through a broken world. Stay tuned for details on Book Three, "Echoes of the Undying," and various side stories exploring the lives and struggles of Arion's crew.
                         </p>
                         <i className="fas fa-hourglass-half text-rose-400 text-6xl mb-4"></i>
                         <p className="text-gray-400 text-xl font-semibold">More to come...</p>
@@ -774,13 +795,13 @@
             // Lore Vault Page Component
             const LoreVaultPage = () => (
                 <section className="main-content-area container mx-auto p-4 md:p-8 py-12">
-                    <h2 className="4xl font-bold font-spectral text-center text-rose-400 mb-12">The Lore Vault: Aeloria's Shattered Truths</h2>
+                    <h2 className="4xl font-bold font-spectral text-center text-rose-400 mb-12">The Lore Vault: Arion's Shattered Truths</h2>
 
                     {/* World Overview */}
                     <div className="bg-gray-800 rounded-xl shadow-lg p-6 md:p-10 mb-10 border border-gray-700 animate-fade-in">
-                        <h3 className="3xl font-bold font-spectral text-rose-300 mb-4">Aeloria: A World Forged in Ruin</h3>
+                        <h3 className="3xl font-bold font-spectral text-rose-300 mb-4">Arion's World: Forged in Ruin</h3>
                         <p className="text-gray-200 leading-relaxed mb-4">
-                            Aeloria is a land scarred by the echoes of forgotten divinity and the devastation of ancient wars. Its cities lie in majestic ruin, monuments to a past both glorious and catastrophic. Magic here is raw, often dangerous, and tied directly to the land's fractured essence. The gods, once revered, are now either shattered whispers or forgotten names, their power fragmented and scattered. Survival is not a privilege, but a constant, brutal negotiation.
+                            Arion's world is a land scarred by the echoes of forgotten divinity and the devastation of ancient wars. Its cities lie in majestic ruin, monuments to a past both glorious and catastrophic. Magic here is raw, often dangerous, and tied directly to the land's fractured essence. The gods, once revered, are now either shattered whispers or forgotten names, their power fragmented and scattered. Survival is not a privilege, but a constant, brutal negotiation.
                         </p>
                         <p className="text-gray-200 leading-relaxed">
                             The atmosphere is one of grim determination and weary resilience. Life persists in the shadows of giants, clinging to defiance against overwhelming odds. It's a world where "hope is dangerous," and pragmatism is the only true faith.
@@ -829,7 +850,7 @@
                             <h4 className="text-2xl font-bold text-rose-200 mb-2">Ryn</h4>
                             <p className="text-gray-400 text-sm mb-3">*Instinct-Driven Survivor*</p>
                             <p className="text-gray-200 leading-snug">
-                                A younger survivor, in whom Arion sees a reflection of his own instinct-driven need to survive. She represents the new generation learning to navigate Aeloria's treacherous landscape.
+                                A younger survivor, in whom Arion sees a reflection of his own instinct-driven need to survive. She represents the new generation learning to navigate Arion's treacherous landscape.
                             </p>
                         </div>
                          {/* Paige */}
@@ -881,7 +902,7 @@
                 <section className="main-content-area container mx-auto p-4 md:p-8 py-12">
                     <h2 className="text-4xl font-bold font-spectral text-center text-rose-400 mb-8">The Interactive Hub</h2>
                     <p className="text-center text-lg text-gray-300 mb-10 max-w-2xl mx-auto">
-                        Step into Aeloria. Forge art from chaos, seek cryptic wisdom from the Oracle, or engage directly with Arion himself.
+                        Step into Arion's Realm. Forge art from chaos, seek cryptic wisdom from the Oracle, or engage directly with Arion himself.
                     </p>
 
                     <div className="w-full bg-gray-800 rounded-lg shadow-xl p-6 md:p-8 flex flex-col items-center border border-gray-700">
@@ -938,7 +959,7 @@
                           </button>
                         </nav>
                         {message && (
-                          <div className="bg-blue-600 text-white p-3 rounded-lg text-center mb-4 w-full transition-all duration-300">
+                          <div className="fixed top-0 left-0 right-0 z-50 bg-red-800 text-white font-bold p-3 text-center transition-all duration-300 shadow-lg">
                             {message}
                           </div>
                         )}
@@ -1058,7 +1079,7 @@
                             <div className="flex flex-col items-center w-full">
                                 <h3 className="text-3xl font-semibold text-rose-300 mb-6">Consult the Oracle of Echoes</h3>
                                 <p className="text-gray-300 text-center mb-6 max-w-2xl">
-                                    Seek guidance from the whispers of Aeloria's shattered past. Ask your question, and the Oracle will reveal a cryptic truth.
+                                    Seek guidance from the whispers of Arion's shattered past. Ask your question, and the Oracle will reveal a cryptic truth.
                                 </p>
 
                                 <div className="bg-gray-700 p-6 rounded-xl shadow-md w-full max-w-xl mb-6 border border-gray-600">
@@ -1135,12 +1156,12 @@
                                     onChange={(e) => setUserMessage(e.target.value)}
                                     rows="2"
                                     className="flex-1 p-3 mr-4 bg-gray-600 text-gray-100 border border-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
-                                    disabled={isSendingMessage}
+                                    disabled={isSendingMessage || !isAuthReady}
                                   ></textarea>
                                   <button
                                     onClick={handleSendMessage}
-                                    disabled={isSendingMessage}
-                                    className={`bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-md ${isSendingMessage ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    disabled={isSendingMessage || !isAuthReady}
+                                    className={`bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-md ${(isSendingMessage || !isAuthReady) ? 'opacity-50 cursor-not-allowed' : ''}`}
                                   >
                                     {isSendingMessage ? 'Muttering...' : 'Ask Arion'}
                                   </button>
@@ -1163,7 +1184,7 @@
                             className="w-48 h-48 rounded-full object-cover mb-8 shadow-xl border-4 border-rose-500"
                             onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/200x200/6b7280/F9FAFB?text=Author+Image"; }}
                         />
-                        <h3 className="text-3xl font-bold font-spectral text-rose-300 mb-4 text-center">The Architect of Aeloria</h3>
+                        <h3 className="text-3xl font-bold font-spectral text-rose-300 mb-4 text-center">The Architect of Arion's Realm</h3>
                         <p className="text-gray-200 leading-relaxed text-center max-w-2xl mb-6">
                             J. Murphy is a master world-builder, a character specialist, and a narrative architect. With a passion for crafting vivid landscapes and deeply flawed, compelling characters, Murphy invites readers into worlds that are as beautiful as they are brutal. Inspired by epic tales and the complex tapestry of human resilience, their stories delve into the dark corners of survival, the messy truths of defiance, and the unexpected hope found in the most unlikely of heroes.
                         </p>
@@ -1186,7 +1207,7 @@
 
                     <div className="bg-gray-800 rounded-xl shadow-lg p-6 md:p-10 mb-10 border border-gray-700 animate-fade-in text-center max-w-2xl mx-auto">
                         <p className="text-gray-200 leading-relaxed text-lg mb-6">
-                            Thank you for visiting Arion's Realm! I love hearing from readers. Whether you have a question about Aeloria, want to share your favorite character, or simply say hello, feel free to reach out.
+                            Thank you for visiting Arion's Realm! I love hearing from readers. Whether you have a question about Arion, want to share your favorite character, or simply say hello, feel free to reach out.
                         </p>
 
                         <div className="flex flex-col space-y-4 mb-8">
@@ -1224,12 +1245,12 @@
             // Blog/Updates Page Component
             const BlogPage = () => (
                 <section className="main-content-area container mx-auto p-4 md:p-8 py-12">
-                    <h2 className="text-4xl font-bold font-spectral text-center text-rose-400 mb-12">Aeloria Dispatches: News & Updates</h2>
+                    <h2 className="text-4xl font-bold font-spectral text-center text-rose-400 mb-12">Arion's Dispatches: News & Updates</h2>
 
                     <div className="bg-gray-800 rounded-xl shadow-lg p-6 md:p-10 mb-10 border border-gray-700 animate-fade-in text-center max-w-2xl mx-auto">
                         <h3 className="text-3xl font-bold font-spectral text-rose-300 mb-4">Welcome to the Blog!</h3>
                         <p className="text-gray-200 leading-relaxed mb-6">
-                            This is where J. Murphy will share the latest news from the world of Aeloria. Expect updates on new book releases, cover reveals, deleted scenes, character insights, event announcements, and musings on the craft of dark fantasy writing.
+                            This is where J. Murphy will share the latest news from the world of Arion. Expect updates on new book releases, cover reveals, deleted scenes, character insights, event announcements, and musings on the craft of dark fantasy writing.
                         </p>
                         <i className="fas fa-feather-alt text-rose-400 text-6xl mb-4"></i>
                         <p className="text-gray-400 text-xl font-semibold">First entry coming soon...</p>
@@ -1248,10 +1269,10 @@
                     </div>
 
                     <div className="bg-gray-800 rounded-xl shadow-lg p-6 md:p-8 mb-6 border border-gray-700 animate-fade-in" style={{ animationDelay: '0.2s' }}>
-                        <h4 className="text-2xl font-bold text-rose-200 mb-2">Designing Aeloria: The Beauty of Ruin</h4>
+                        <h4 className="text-2xl font-bold text-rose-200 mb-2">Designing Arion's Realm: The Beauty of Ruin</h4>
                         <p className="text-gray-400 text-sm mb-3">Posted: April 28, 2025 | By J. Murphy</p>
                         <p className="text-gray-200 leading-relaxed">
-                            For Aeloria, I wanted a world that felt ancient, burdened, but still held a savage beauty. The ruins aren't just rubble; they're monuments to forgotten power, warnings carved in stone, and potential hiding places for secrets best left buried... <a href="#" className="text-blue-400 hover:underline">Read More</a>
+                            For Arion's world, I wanted a world that felt ancient, burdened, but still held a savage beauty. The ruins aren't just rubble; they're monuments to forgotten power, warnings carved in stone, and potential hiding places for secrets best left buried... <a href="#" className="text-blue-400 hover:underline">Read More</a>
                         </p>
                     </div>
                 </section>
@@ -1263,7 +1284,7 @@
                 <div className="min-h-screen flex flex-col">
                     {/* Global Message Display */}
                     {message && (
-                        <div className="fixed top-0 left-0 right-0 z-50 bg-blue-600 text-white p-3 text-center transition-all duration-300 shadow-lg">
+                        <div className="fixed top-0 left-0 right-0 z-50 bg-red-800 text-white font-bold p-3 text-center transition-all duration-300 shadow-lg">
                             {message}
                         </div>
                     )}
@@ -1342,7 +1363,7 @@
                         <div className="container mx-auto">
                             <p className="mb-4">&copy; {new Date().getFullYear()} J. Murphy. All Rights Reserved.</p>
                             <p className="text-sm">
-                                The Chronicles of Aeloria and all related characters and lore are property of J. Murphy. <br/>
+                                The Chronicles of Arion and all related characters and lore are property of J. Murphy. <br/>
                                 Designed with grit, magic, and a little bit of chaos.
                             </p>
                         </div>
