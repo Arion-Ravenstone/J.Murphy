@@ -448,7 +448,7 @@
                         }
                     };
 
-                    const apiKey = "AIzaSyDauaoyAjCocNtUyojbvZPVZaKSqpQPT1k"; // Canvas will provide this in runtime
+                    const apiKey = "AIzaSyCjN_h7eNkPngQfMeZNj-9UhmU641cJ7WE"; // Canvas will provide this in runtime
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                     const response = await fetch(apiUrl, {
@@ -492,7 +492,7 @@
                 try {
                     const fullPrompt = `${arionPersonaPrompt}\n\nScenario Choice Consequence: ${choicePrompt}`;
                     const payload = { contents: [{ role: "user", parts: [{ text: fullPrompt }] }] };
-                    const apiKey = "AIzaSyDauaoyAjCocNtUyojbvZPVZaKSqpQPT1k"; // Canvas will provide this in runtime
+                    const apiKey = "AIzaSyCjN_h7eNkPngQfMeZNj-9UhmU641cJ7WE"; // Canvas will provide this in runtime
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                     const response = await fetch(apiUrl, {
@@ -621,7 +621,7 @@
 
                 try {
                     const payload = { instances: { prompt: imagePromptInput }, parameters: { "sampleCount": 1} };
-                    const apiKey = "AIzaSyDauaoyAjCocNtUyojbvZPVZaKSqpQPT1k"
+                    const apiKey = "AIzaSyCjN_h7eNkPngQfMeZNj-9UhmU641cJ7WE"
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
 
                     const response = await fetch(apiUrl, {
@@ -817,7 +817,7 @@
 
                     let chatContext = [{ role: "user", parts: [{ text: prompt }] }];
                     const payload = { contents: chatContext };
-                    const apiKey = "AIzaSyDauaoyAjCocNtUyojbvZPVZaKSqpQPT1k"
+                    const apiKey = "AIzaSyCjN_h7eNkPngQfMeZNj-9UhmU641cJ7WE"
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                     const response = await fetch(apiUrl, {
@@ -943,7 +943,7 @@
                     conversationToSend.push({ role: 'user', parts: [{ text: arionPersonaPrompt + "\n\n" + contextMessage + "\n\nUser: " + newUserMessage.text }] });
 
                     const payload = { contents: conversationToSend };
-                    const apiKey = "AIzaSyDauaoyAjCocNtUyojbvZPVZaKSqpQPT1k"
+                    const apiKey = "AIzaSyCjN_h7eNkPngQfMeZNj-9UhmU641cJ7WE"
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                     const response = await fetch(apiUrl, {
@@ -1376,7 +1376,7 @@
 
                 try {
                     const payload = { contents: [{ role: "user", parts: [{ text: arionPersonaPrompt + "\n\n" + prompt }] }] };
-                    const apiKey = "AIzaSyDauaoyAjCocNtUyojbvZPVZaKSqpQPT1k"
+                    const apiKey = "AIzaSyCjN_h7eNkPngQfMeZNj-9UhmU641cJ7WEk"
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                     const response = await fetch(apiUrl, {
