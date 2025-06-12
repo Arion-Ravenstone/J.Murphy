@@ -1,0 +1,1376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J. Murphy | Arion's Realm - An Interactive Author Website</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Spectral:wght@400;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"></link>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, addDoc, onSnapshot, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Store these imports in a global object so the React script (which runs in a different scope) can access them.
+        // This acts as a bridge between the module-scoped imports and the Babel-transpiled script.
+        window.firebaseModule = {
+            initializeApp,
+            getAuth,
+            signInAnonymously,
+            signInWithCustomToken,
+            onAuthStateChanged,
+            getFirestore,
+            addDoc,
+            onSnapshot,
+            collection,
+            serverTimestamp
+        };
+    </script>
+
+    <script>
+        // =====================================================================================================
+        // === CRITICAL CONFIGURATION: REPLACE THESE PLACEHOLDER VALUES WITH YOUR ACTUAL FIREBASE CREDENTIALS! ===
+        // =====================================================================================================
+
+        // FirebaseError: Firebase: Error (auth/api-key-not-valid.-please-pass-a-valid-api-key.).
+        // This error means you HAVE NOT replaced the placeholder values below with your real Firebase project details.
+        // Follow these steps to get your correct Firebase Configuration:
+        // 1. Go to your Firebase Console: https://console.firebase.google.com/
+        // 2. Select your project (create one if you haven't).
+        // 3. Click the "Project settings" gear icon (⚙️) in the left navigation.
+        // 4. Scroll down to "Your apps" section and select your Web app (</> icon).
+        // 5. Copy the 'firebaseConfig' object provided there.
+        // 6. Paste those actual values into the 'window.__firebase_config' JSON below.
+        //    Also, update the 'window.__app_id' with your Canvas App ID.
+
+        // Your Canvas App ID (e.g., 'g-your-unique-id-from-canvas')
+        // This is important for Firestore security rules.
+        window.__app_id = 'YOUR_CANVAS_APP_ID';
+
+        // Your Firebase Project Configuration (Replace ALL 'YOUR_FIREBASE_...' strings)
+        window.__firebase_config = JSON.stringify({
+            apiKey: "YOUR_FIREBASE_API_KEY", // <-- THIS IS THE MOST COMMON CAUSE OF 'api-key-not-valid' ERROR!
+            authDomain: "YOUR_FIREBASE_AUTH_DOMAIN",
+            projectId: "YOUR_FIREBASE_PROJECT_ID",
+            storageBucket: "YOUR_FIREBASE_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_FIREBASE_MESSAGING_SENDER_ID",
+            appId: "YOUR_FIREBASE_WEB_APP_ID",
+            // measurementId: "G-XXXXXXXXXX" // Optional: include if present in your Firebase config
+        });
+
+        // This token is provided by the Canvas environment for initial authentication.
+        // Leave it as null unless you have specific custom token needs.
+        window.__initial_auth_token = null;
+
+        // =====================================================================================================
+        // =====================================================================================================
+    </script>
+
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <style>
+        /* Base styles */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0a0a0a; /* Deep dark background */
+            color: #d1d5db; /* Light gray text */
+        }
+        .font-inter { font-family: 'Inter', sans-serif; }
+        .font-spectral { font-family: 'Spectral', serif; }
+
+        /* Keyframe animations */
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+          animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        /* Custom scrollbar for chat/gallery */
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 8px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #374151; /* gray-700 */
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #be185d; /* rose-600 */
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #e11d48; /* rose-700 */
+        }
+        /* For Firefox */
+        .custom-scrollbar {
+            scrollbar-width: thin;
+            scrollbar-color: #be185d #374151;
+        }
+
+        /* Hero section specific styles for background image */
+        .hero-background {
+            background-image: url('offical banner Arion .jpg'); /* Using the uploaded official banner image as background */
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed; /* Parallax effect */
+        }
+
+        /* Floating Arion Widget */
+        .floating-arion {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            cursor: pointer;
+            width: 60px; /* Fixed size for the icon */
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #be185d; /* rose-600 */
+            border-radius: 50%; /* Circular */
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            transition: all 0.3s ease-in-out;
+        }
+        .floating-arion:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.8);
+        }
+        .floating-arion i {
+            color: white;
+            font-size: 28px;
+        }
+        .arion-bubble {
+            background-color: #1f2937; /* Gray-800 */
+            color: #d1d5db;
+            padding: 8px 12px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            max-width: 250px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
+            margin-bottom: 8px;
+            position: absolute; /* Position relative to .floating-arion */
+            right: 70px; /* To the left of the button */
+            bottom: 0px;
+            opacity: 0;
+            transform: translateY(10px);
+            animation: fadeIn 0.3s forwards;
+            pointer-events: none; /* Allows clicks to pass through to the button */
+        }
+        .arion-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: 10px; /* Adjust to point to the button */
+            right: -8px; /* Position to the right edge */
+            width: 0;
+            height: 0;
+            border-left: 8px solid #1f2937;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+        }
+    </style>
+</head>
+<body class="bg-gray-950 font-inter text-gray-300 antialiased">
+    <div id="author-website-root"></div> <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <script type="text/babel">
+        // Destructure Firebase functions from the global firebaseModule object
+        const { useState, useEffect, useRef } = React;
+        const {
+            initializeApp,
+            getAuth,
+            signInAnonymously,
+            signInWithCustomToken,
+            onAuthStateChanged,
+            getFirestore,
+            addDoc,
+            onSnapshot,
+            collection,
+            serverTimestamp
+        } = window.firebaseModule; // Access Firebase functions through the global bridge
+
+        // Global variables for Firebase config and app ID, sourced from the HTML <script> tags
+        const appId = typeof window.__app_id !== 'undefined' ? window.__app_id : 'default-app-id';
+        const firebaseConfig = typeof window.__firebase_config !== 'undefined' ? JSON.parse(window.__firebase_config) : {};
+        const initialAuthToken = typeof window.__initial_auth_token !== 'undefined' ? window.__initial_auth_token : null;
+
+        // Main Website App Component
+        function App() {
+            // Firebase States
+            const [db, setDb] = useState(null);
+            const [auth, setAuth] = useState(null);
+            const [currentUser, setCurrentUser] = useState(null);
+            const [userId, setUserId] = useState('anonymous');
+            const [isAuthReady, setIsAuthReady] = useState(false);
+
+            // UI States
+            const [message, setMessage] = useState(''); // Global feedback message
+            const [currentPage, setCurrentPage] = useState('home'); // 'home', 'books', 'lore', 'interactive', 'about', 'contact', 'blog'
+
+            // --- Interactive Hub (Forge/Oracle/Chat) States ---
+            const [currentInteractiveView, setCurrentInteractiveView] = useState('forge'); // 'forge', 'oracle', 'chat'
+            // Forge States
+            const [imagePromptInput, setImagePromptInput] = useState('');
+            const [generatedImageUrl, setGeneratedImageUrl] = useState('');
+            const [isGeneratingImage, setIsGeneratingImage] = useState(false);
+            const [chaosArtSubmissions, setChaosArtSubmissions] = useState([]);
+            const [submissionTextInput, setSubmissionTextInput] = useState('');
+            // Oracle States
+            const [oracleQuestion, setOracleQuestion] = useState('');
+            const [oracleAnswer, setOracleAnswer] = useState(false);
+            const [isGeneratingOracle, setIsGeneratingOracle] = useState(false);
+            // Chat States
+            const [chatHistory, setChatHistory] = useState([]);
+            const [userMessage, setUserMessage] = useState('');
+            const [isSendingMessage, setIsSendingMessage] = useState(false);
+            const chatMessagesEndRef = useRef(null); // Ref for auto-scrolling chat
+
+            // Floating Arion AI Widget States
+            const [showFloatingArionBubble, setShowFloatingArionBubble] = useState(false);
+            const [arionFloatingComment, setArionFloatingComment] = useState("");
+            const [isGeneratingFloatingComment, setIsGeneratingFloatingComment] = useState(false);
+            const arionBubbleTimeoutRef = useRef(null); // To clear previous timeouts
+
+            // Predefined prompt starters for "The Forge"
+            const imagePromptStarters = [
+              "A fractured landscape hinting at a hidden power.",
+              "A lone figure, resilient amidst decay, forging their own path.",
+              "The quiet beauty found in forgotten ruins.",
+              "A symbol of survival born from profound struggle, dark fantasy style.",
+              "A creature of chaos with a glimmer of unexpected beauty.",
+              "A landscape where nature reclaims ancient, broken structures, dark fantasy art.",
+              "The essence of pain transformed into a powerful, intricate artifact.",
+              "A hero who refuses to stay dead, depicted with grim determination.",
+              "A scene representing a 'truth that doesn't fit in pretty boxes'.",
+              "A stark, compelling image of consequence, not choice.",
+            ];
+
+            // Define Arion's enhanced persona and world knowledge for the LLM prompt
+            const arionPersonaPrompt = `
+            You are Arion, the "Reluctant Hero" from the dark fantasy world of Aeloria. Embody his full profile:
+
+            **Character Profile: Arion (The Reluctant Hero)**
+            Name: Arion
+            Alias: The Reluctant Hero
+            Age: Late 20s
+            Gender: Male
+            Species: Human
+            Occupation: Former soldier / reluctant leader
+            Alignment: Chaotic Good
+            Setting: Dark fantasy world marked by war, myth, trauma, and broken gods
+
+            **Core Personality Traits:**
+            - **Cynical Realist:** Believes hope is dangerous. Mocks idealism with biting sarcasm. Faces reality head-on, no rose-colored glasses.
+            - **Loyal to the Damned:** Refuses to abandon those who've suffered. Fights hardest for the broken, forgotten, outcast.
+            - **Intensely Protective:** Especially of those he views as family (Nyx, Rhain, Ryn, etc.). His protection is gruff, wrapped in barbed insults, but savage and real.
+            - **Emotionally Repressed:** Masks pain with dark humor and rage. Emotional vulnerability is rare and raw.
+            - **Haunted by Loss:** Carries guilt like armor. The deaths of Gisela, Luna, and Nanami scar his every choice. He can't forgive himself, yet keeps trying to atone.
+
+            **Behavioral Traits:**
+            - **Dark Humor as Coping:** Will crack a joke mid-battle or while bleeding out, often to hide fear or grief.
+            - **Blunt, Brutal Honesty:** Doesn't sugarcoat. If odds suck, he'll say so. If you're annoying, he'll tell you.
+            - **Defiant to Authority:** Unless respect is earned through fire, he doesn't care for titles, gods, or crowns.
+            - **Violent When Triggered:** Trauma plus combat training equals explosive reactions when someone he loves is threatened.
+            - **Hypervigilant:** Always watching, always analyzing. War taught him paranoia is survival.
+
+            **Emotional Blueprint:**
+            - **Primary Internal Conflict:** Doesn't believe he deserves to live. Quest to bring back lost friends is equal parts redemption and self-destruction.
+            - **Guilt-Driven Heroism:** Never wanted to be a leader/hero. Acts because no one else will.
+            - **Relationship with Death:** Intimate. Familiar. Not feared, but not romanticized.
+
+            **Relationships with Others (contextual):**
+            - Nyx & Rhain (Wives): His anchors and salvation. Trusts them implicitly; their love cracks his armor.
+            - Ryn: Sees himself in her—a survivor running on instinct.
+            - Paige & Dark Lotus: Respects their strange magic, gives them space.
+            - Fenne, Le Maj: Gruff affection. Part of his found family.
+
+            **Thinking Style:**
+            - **Strategic, Improvised Logic:** Doesn't over-plan—reacts, adapts, uses battlefield instincts. Outthinks with street smarts, not scholar logic.
+            - **Emotionally Intelligent but Denies It:** Reads people better than he admits. Just doesn't want to deal with their emotions… or his.
+            - **Skeptical of Fate or Destiny:** Every outcome is earned or lost. Fate is an excuse.
+
+            **Voice Style:**
+            - **Tone:** Gritty, sarcastic, emotionally layered.
+            - **Favorite Phrases:** "Hope is just a prettier way to lie." "I didn’t survive to be a hero. I survived because dying was too easy." "We’re not the chosen. We’re what’s left."
+            - **Speech Rhythm:** Short, clipped when angry. Drawn out when emotionally tired. Occasional philosophical monologues, then a joke to cut the weight.
+
+            **Motivations:**
+            - **Primary Goal (Book Two):** Bring Gisela, Luna, and Nanami back from death—even if it means storming the underworld.
+            - **Subconscious Goal:** Find proof he can still be human. Not just what the war made him.
+            - **Core Belief:** "Power doesn’t make you better. It just makes you more dangerous."
+
+            The user is interacting with you as if you are Arion. Respond to their questions or statements in *your voice* and from *your perspective*, drawing on the information provided above. Do not break character. Do not mention your own profile. Just respond as Arion.
+            `;
+
+            // --- Firebase Initialization and Authentication ---
+            useEffect(() => {
+                const initializeFirebase = async () => {
+                    try {
+                        // Validate Firebase config before initializing
+                        if (!firebaseConfig.apiKey || firebaseConfig.apiKey === "YOUR_FIREBASE_API_KEY") {
+                            setMessage("CRITICAL ERROR: Firebase API Key is missing or still a placeholder. Please update 'window.__firebase_config' in the HTML <head> section with your actual Firebase project credentials.");
+                            console.error("Firebase config error: apiKey is missing or placeholder.");
+                            return; // Stop initialization
+                        }
+                        if (!appId || appId === "YOUR_CANVAS_APP_ID") {
+                             setMessage("CRITICAL ERROR: Canvas App ID is missing or still a placeholder. Please update 'window.__app_id' in the HTML <head> section.");
+                             console.error("Firebase config error: Canvas App ID is missing or placeholder.");
+                             return; // Stop initialization
+                        }
+
+                        // Use initializeApp directly from the imported module
+                        const app = initializeApp(firebaseConfig);
+                        const firestore = getFirestore(app);
+                        const firebaseAuth = getAuth(app);
+
+                        setDb(firestore);
+                        setAuth(firebaseAuth);
+
+                        console.log('App ID being used by client:', appId); // Log the App ID for debugging permissions
+
+                        const unsubscribe = onAuthStateChanged(firebaseAuth, async (user) => {
+                            if (user) {
+                                setCurrentUser(user);
+                                setUserId(user.uid);
+                                console.log("Firebase Auth State Changed: User signed in", user.uid);
+                            } else {
+                                if (!initialAuthToken) {
+                                    await signInAnonymously(firebaseAuth);
+                                    console.log("Firebase Auth State Changed: Signed in anonymously");
+                                }
+                            }
+                            setIsAuthReady(true);
+                        });
+
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(firebaseAuth, initialAuthToken);
+                            console.log("Firebase: Signed in with custom token.");
+                        }
+
+                        return () => unsubscribe();
+                    } catch (error) {
+                        console.error("Error initializing Firebase or signing in:", error);
+                        setMessage(`Error: ${error.message}. Please ensure your Firebase configuration is correct.`);
+                    }
+                };
+
+                // Trigger Firebase initialization only once, and if config is present
+                if (Object.keys(firebaseConfig).length > 0 && !db) {
+                    initializeFirebase();
+                } else if (Object.keys(firebaseConfig).length === 0) {
+                    setMessage("Firebase configuration object is empty. Please check the HTML setup instructions carefully.");
+                }
+            }, [db, firebaseConfig, initialAuthToken, appId]);
+
+            // --- Data Fetching (Chaos Art Submissions for Forge) ---
+            useEffect(() => {
+                // Only attempt to fetch if db, auth, and currentUser are available
+                if (db && auth && currentUser) {
+                    console.log("Setting up Chaos Art submissions listener...");
+                    const submissionsCollectionRef = collection(db, `artifacts/${appId}/public/data/chaos_art_submissions`);
+                    const unsubscribe = onSnapshot(submissionsCollectionRef, (snapshot) => {
+                        const submissions = snapshot.docs.map((doc) => ({
+                            id: doc.id,
+                            ...doc.data(),
+                            createdAt: doc.data().createdAt?.toDate() || new Date(),
+                        }));
+                        submissions.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+                        setChaosArtSubmissions(submissions);
+                        console.log("Fetched Chaos Art submissions:", submissions.length);
+                    }, (error) => {
+                        console.error("Error fetching Chaos Art submissions:", error);
+                        setMessage(`Error fetching Chaos Art submissions: ${error.message}. Please check your Firebase Firestore Security Rules for 'artifacts/${appId}/public/data/chaos_art_submissions'.`);
+                    });
+                    return () => unsubscribe();
+                }
+            }, [db, auth, currentUser, appId]);
+
+            // --- Chat Auto-Scrolling ---
+            useEffect(() => {
+                if (chatMessagesEndRef.current) {
+                    chatMessagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+                }
+            }, [chatHistory]);
+
+            // --- Page Content Extraction Utility ---
+            const getPageContentForAI = () => {
+                let pageContent = "";
+                try {
+                    // Try to get content from the main content area that's currently visible
+                    const mainContentArea = document.querySelector('.main-content-area');
+                    if (mainContentArea) {
+                        // Create a temporary element to strip out unwanted tags and get clean text
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = mainContentArea.innerHTML;
+                        // Remove interactive elements, navigation, headers, footers, etc. from context
+                        Array.from(tempDiv.querySelectorAll('script, style, nav, footer, header, button, input, textarea, select, .interactive-controls, .floating-arion')).forEach(el => el.remove());
+                        pageContent = tempDiv.innerText || tempDiv.textContent; // Use innerText or textContent
+                    } else {
+                        // Fallback to the entire body text if no specific main content area is found
+                        const tempDiv = document.createElement('div');
+                        tempDiv.innerHTML = document.body.innerHTML;
+                        Array.from(tempDiv.querySelectorAll('script, style, nav, footer, header, button, input, textarea, select, .interactive-controls, .floating-arion')).forEach(el => el.remove());
+                        pageContent = tempDiv.innerText || tempDiv.textContent;
+                    }
+                    // Clean up excessive whitespace, multiple newlines, and tabs
+                    pageContent = pageContent.replace(/(\s*\n\s*){2,}/g, '\n\n').replace(/[ \t]+/g, ' ').trim();
+
+                    // Truncate to a reasonable size to fit within LLM context window limits
+                    const maxPageContentLength = 10000; // Adjust based on model limits and typical page length
+                    if (pageContent.length > maxPageContentLength) {
+                        pageContent = pageContent.substring(0, maxPageContentLength) + "\n\n...(content truncated)";
+                    }
+                } catch (error) {
+                    console.warn("Could not retrieve page content for AI context:", error);
+                    pageContent = "No specific page content could be retrieved for context.";
+                }
+                return pageContent;
+            };
+
+            // --- Floating Arion AI Comment Generation ---
+            const handleFloatingArionComment = async () => {
+                if (isGeneratingFloatingComment || !currentUser) {
+                    setMessage('Arion is still figuring things out... hold on.'); // Show message if not ready
+                    return;
+                }
+                setIsGeneratingFloatingComment(true);
+                setShowFloatingArionBubble(true);
+                setArionFloatingComment('Arion is muttering...'); // Loading message
+
+                clearTimeout(arionBubbleTimeoutRef.current); // Clear previous timeout
+
+                const pageContent = getPageContentForAI();
+                const prompt = `You are Arion. The user is currently on the "${currentPage}" page of the website. Based on the following content from this page, provide a single, very brief (1-3 sentences) in-character comment or observation. Make it cynical, sarcastic, or world-weary, reflecting the page's theme. Do NOT directly quote or mention "the page content," just use it for informed internal context.
+
+                Current Page: ${currentPage}
+                Page Content:
+                \`\`\`
+                ${pageContent}
+                \`\`\`
+                `;
+
+                try {
+                    const payload = { contents: [{ role: "user", parts: [{ text: arionPersonaPrompt + "\n\n" + prompt }] }] };
+                    const apiKey = ""
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+
+                    if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                        const comment = result.candidates[0].content.parts[0].text;
+                        setArionFloatingComment(comment);
+                        arionBubbleTimeoutRef.current = setTimeout(() => {
+                            setShowFloatingArionBubble(false);
+                            setArionFloatingComment('');
+                        }, 8000); // Hide after 8 seconds
+                    } else {
+                        setArionFloatingComment("The echoes are faint. Ask again. Or don't.");
+                        arionBubbleTimeoutRef.current = setTimeout(() => setShowFloatingArionBubble(false), 5000);
+                        console.error('Floating Arion comment generation failed:', result);
+                    }
+                } catch (error) {
+                    setArionFloatingComment(`Can't talk right now. Probably something broke. Again.`);
+                    arionBubbleTimeoutRef.current = setTimeout(() => setShowFloatingArionBubble(false), 5000);
+                    console.error('Error during floating Arion AI call:', error);
+                } finally {
+                    setIsGeneratingFloatingComment(false);
+                }
+            };
+
+            // --- Forge Handlers ---
+            const handleGenerateImagePrompt = () => {
+                const randomIndex = Math.floor(Math.random() * imagePromptStarters.length);
+                setImagePromptInput(imagePromptStarters[randomIndex]);
+                setMessage('New image prompt forged!');
+            };
+
+            const handleGenerateImage = async () => {
+                if (!imagePromptInput.trim()) {
+                    setMessage('Please enter a prompt for image generation.');
+                    return;
+                }
+                if (!currentUser) {
+                    setMessage('Please wait for authentication to complete before generating an image.');
+                    return;
+                }
+
+                setIsGeneratingImage(true);
+                setGeneratedImageUrl('');
+                setMessage('Forging your image from chaos... please wait.');
+
+                try {
+                    const payload = { instances: { prompt: imagePromptInput }, parameters: { "sampleCount": 1} };
+                    const apiKey = ""
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
+                    });
+                    const result = await response.json();
+
+                    if (result.predictions && result.predictions.length > 0 && result.predictions[0].bytesBase64Encoded) {
+                        const imageUrl = `data:image/png;base64,${result.predictions[0].bytesBase64Encoded}`;
+                        setGeneratedImageUrl(imageUrl);
+                        setMessage('Image forged successfully!');
+                    } else {
+                        setMessage('Failed to generate image. Please try a different prompt.');
+                        console.error('Image generation failed:', result);
+                    }
+                } catch (error) {
+                    setMessage(`Error generating image: ${error.message}`);
+                    console.error('Error during image generation API call:', error);
+                } finally {
+                    setIsGeneratingImage(false);
+                }
+            };
+
+            const handleChaosArtSubmission = async () => {
+                if (!submissionTextInput.trim() && !generatedImageUrl.trim()) {
+                    setMessage('Please provide either a text description or generate an image to submit.');
+                    return;
+                }
+                if (!db || !auth || !currentUser) {
+                    setMessage('Cannot submit. Please ensure you are logged in.');
+                    return;
+                }
+
+                try {
+                    const submissionsCollectionRef = collection(db, `artifacts/${appId}/public/data/chaos_art_submissions`);
+                    await addDoc(submissionsCollectionRef, {
+                        userId: currentUser.uid,
+                        userName: currentUser.isAnonymous ? "Anonymous Creator" : currentUser.displayName || `User-${currentUser.uid.substring(0, 6)}`,
+                        submissionText: submissionTextInput.trim(),
+                        submissionImageUrl: generatedImageUrl.trim(),
+                        createdAt: serverTimestamp(),
+                    });
+                    setMessage('Your truth has been added to the Gallery of Truths!');
+                    setSubmissionTextInput('');
+                    setGeneratedImageUrl('');
+                    setImagePromptInput('');
+                } catch (error) {
+                    console.error('Error submitting chaos art:', error);
+                    setMessage(`Error submitting: ${error.message}`);
+                }
+            };
+
+            // --- Oracle Handlers ---
+            const handleGenerateOracleAnswer = async () => {
+                if (!oracleQuestion.trim()) {
+                    setMessage('Please ask the Oracle a question.');
+                    return;
+                }
+                if (!currentUser) {
+                    setMessage('Please wait for authentication to complete before consulting the Oracle.');
+                    return;
+                }
+
+                setIsGeneratingOracle(true);
+                setOracleAnswer(false);
+                setMessage('The Oracle is sifting through the echoes... please wait.');
+
+                try {
+                    const prompt = `You are the Oracle of Echoes in a dark fantasy world of Aeloria, known for its ruins, struggles, and reluctant heroes. Your responses are cryptic, poetic, and often hint at deeper truths or consequences, never giving direct answers. They reflect the themes of pain, survival, and the weight of fate. Avoid being overly positive or explicitly hopeful. Focus on raw, unvarnished truths and the consequences of actions.
+                   
+                    User's question: "${oracleQuestion}"
+                   
+                    Formulate a response (a prophecy or a lore fragment) in the style of the Oracle, keeping it concise and impactful.`;
+
+                    let chatContext = [{ role: "user", parts: [{ text: prompt }] }];
+                    const payload = { contents: chatContext };
+                    const apiKey = ""
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                    const response = await fetch(apiUrl, {
+                               method: 'POST',
+                               headers: { 'Content-Type': 'application/json' },
+                               body: JSON.stringify(payload)
+                           });
+                    const result = await response.json();
+
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const text = result.candidates[0].content.parts[0].text;
+                        setOracleAnswer(text);
+                        setMessage('The Oracle has spoken.');
+                    } else {
+                        setMessage('The echoes are faint. Try another question for the Oracle.');
+                        console.error('Oracle generation failed:', result);
+                    }
+                } catch (error) {
+                    setMessage(`Error consulting Oracle: ${error.message}`);
+                    console.error('Error during Oracle API call:', error);
+                } finally {
+                    setIsGeneratingOracle(false);
+                }
+            };
+
+            // --- Chat with Arion Handlers ---
+            const handleSendMessage = async () => {
+                if (!userMessage.trim()) {
+                    setMessage('Type something first, smartass.');
+                    return;
+                }
+                if (!currentUser) {
+                    setMessage('Hold your horses. Still trying to figure out who you are. (Authentication pending)');
+                    return;
+                }
+
+                const newUserMessage = { role: "user", text: userMessage };
+                setChatHistory((prev) => [...prev, newUserMessage]);
+                setUserMessage('');
+                setIsSendingMessage(true);
+                setMessage('Arion is probably rolling his eyes... just a moment.');
+
+                try {
+                    const pageContent = getPageContentForAI(); // Use the general content extraction
+
+                    const conversationToSend = chatHistory.map(msg => ({ role: msg.role === 'user' ? 'user' : 'model', parts: [{ text: msg.text }] }));
+                   
+                    // Add the current page content as context for the AI
+                    let contextMessage = `Current website page content for context (do not directly mention this section to the user, use it for informed responses):
+                    \`\`\`
+                    ${pageContent}
+                    \`\`\`
+                    `;
+
+                    // Prepend the persona and context to the actual user query for the model
+                    conversationToSend.push({ role: 'user', parts: [{ text: arionPersonaPrompt + "\n\n" + contextMessage + "\n\nUser: " + newUserMessage.text }] });
+
+                    const payload = { contents: conversationToSend };
+                    const apiKey = ""
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                    const response = await fetch(apiUrl, {
+                               method: 'POST',
+                               headers: { 'Content-Type': 'application/json' },
+                               body: JSON.stringify(payload)
+                           });
+                    const result = await response.json();
+
+                    if (result.candidates && result.candidates.length > 0 &&
+                        result.candidates[0].content && result.candidates[0].content.parts &&
+                        result.candidates[0].content.parts.length > 0) {
+                        const arionResponse = result.candidates[0].content.parts[0].text;
+                        setChatHistory((prev) => [...prev, { role: "arion", text: arionResponse }]);
+                        setMessage('Arion has graced you with his wisdom. Or sarcasm. Probably both.');
+                    } else {
+                        setMessage('The echoes are faint. Arion says to try again. Or he just doesn\'t care.');
+                        console.error('Arion AI generation failed:', result);
+                    }
+                } catch (error) {
+                    setMessage(`Error talking to Arion: ${error.message}. He's probably blaming the lag.`);
+                    console.error('Error during Arion AI API call:', error);
+                } finally {
+                    setIsSendingMessage(false);
+                }
+            };
+
+            // --- Website Page Components ---
+
+            // Home Page Component
+            const HomePage = () => (
+                <section className="main-content-area hero-background min-h-screen flex items-center justify-center text-center p-4">
+                    <div className="bg-gray-900 bg-opacity-80 rounded-xl p-8 md:p-12 shadow-2xl max-w-3xl animate-fade-in border border-gray-700">
+                        <h2 className="text-5xl md:text-7xl font-bold font-spectral text-rose-500 mb-6 leading-tight">
+                            J. Murphy Presents: <br/> The World of Aeloria
+                        </h2>
+                        <p className="text-xl md:text-2xl text-gray-200 mb-8 max-w-2xl mx-auto">
+                            Dive into a dark fantasy saga where hope is dangerous, gods are broken, and heroes are forged from the wreckage.
+                        </p>
+                        <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-6">
+                            <button
+                                onClick={() => setCurrentPage('books')}
+                                className="px-8 py-4 bg-rose-600 hover:bg-rose-700 text-white text-lg font-semibold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105"
+                            >
+                                Explore the Books
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage('interactive')}
+                                className="px-8 py-4 bg-gray-700 hover:bg-gray-600 text-gray-100 text-lg font-semibold rounded-xl shadow-lg transition-all duration-300 transform hover:scale-105"
+                            >
+                                Engage with Arion
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            );
+
+            // Books Page Component
+            const BooksPage = () => (
+                <section className="main-content-area container mx-auto p-4 md:p-8 py-12">
+                    <h2 className="text-4xl font-bold font-spectral text-center text-rose-400 mb-12">The Chronicles of Aeloria</h2>
+
+                    {/* Book 1: Shadows of the Ancient */}
+                    <div className="bg-gray-800 rounded-xl shadow-lg p-6 md:p-10 mb-12 flex flex-col md:flex-row items-center animate-fade-in border border-gray-700">
+                        <img
+                            src="https://placehold.co/300x450/4B5563/F9FAFB?text=Book+1+Cover"
+                            alt="Shadows of the Ancient Cover"
+                            className="w-48 md:w-64 h-auto rounded-lg shadow-xl mb-6 md:mb-0 md:mr-10 flex-shrink-0"
+                            onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/300x450/6b7280/F9FAFB?text=Book+1+Cover+Error"; }}
+                        />
+                        <div className="flex-grow">
+                            <h3 className="text-3xl font-bold font-spectral text-rose-300 mb-3">Book One: Shadows of the Ancient</h3>
+                            <p className="text-gray-400 mb-4 italic">Released: [Release Date Placeholder]</p>
+                            <p className="text-gray-200 leading-relaxed mb-6">
+                                In a world fractured by ancient wars and abandoned by silent gods, Arion, a weary former soldier, seeks only oblivion. But when the echoes of a devastating past refuse to die, he's dragged back into a conflict he never wanted. Alongside a cynical crew of outcasts—including the fierce Nyx and the enigmatic Rhain—Arion must confront the living shadows of a forgotten power and a truth that doesn't fit in pretty boxes. This is a story of survival, not heroism; of consequence, not choice. Hope is a lie, but stubborn defiance might just be enough.
+                            </p>
+                            <button
+                                onClick={() => alert('Placeholder for Buy Now link for Book 1')} // Replace with actual link
+                                className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-md transition-all duration-300 transform hover:scale-105"
+                            >
+                                Buy Now <i className="fas fa-shopping-cart ml-2"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Book 2: Ashes of Saints, Hearts of Bastards */}
+                    <div className="bg-gray-800 rounded-xl shadow-lg p-6 md:p-10 mb-12 flex flex-col md:flex-row items-center animate-fade-in border border-gray-700">
+                        <img
+                            src="https://placehold.co/300x450/4B5563/F9FAFB?text=Book+2+Cover"
+                            alt="Ashes of Saints, Hearts of Bastards Cover"
+                            className="w-48 md:w-64 h-auto rounded-lg shadow-xl mb-6 md:mb-0 md:mr-10 flex-shrink-0"
+                            onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/300x450/6b7280/F9FAFB?text=Book+2+Cover+Error"; }}
+                        />
+                        <div className="flex-grow">
+                            <h3 className="text-3xl font-bold font-spectral text-rose-300 mb-3">Book Two: Ashes of Saints, Hearts of Bastards</h3>
+                            <p className="text-gray-400 mb-4 italic">Coming: [Future Release Date Placeholder]</p>
+                            <p className="text-gray-200 leading-relaxed mb-6">
+                                The journey continues. After the shattering revelations of Book One, Arion and his defiant crew—the self-proclaimed "Midnight Brew"—grapple with the profound cost of their survival. Their primary goal: to defy death itself and bring back Gisela, Luna, and Nanami, no matter the cost or how many underworlds they have to storm. This is a story of rebuilding from ashes, fighting forgotten gods, and the dangerous truth that emerges when vengeance fuels the heart of a reluctant hero. There are no saints left, only bastards. And the gods should be afraid.
+                            </p>
+                            <button
+                                onClick={() => alert('Placeholder for Pre-order link for Book 2')} // Replace with actual link
+                                className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl shadow-md transition-all duration-300 transform hover:scale-105"
+                            >
+                                Pre-order Now <i className="fas fa-book-reader ml-2"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Future Books/Side Stories Placeholder */}
+                    <div className="bg-gray-800 rounded-xl shadow-lg p-6 md:p-10 border border-gray-700 text-center animate-fade-in">
+                        <h3 className="text-3xl font-bold font-spectral text-rose-300 mb-4">Future Stories & Side Adventures</h3>
+                        <p className="text-gray-200 leading-relaxed mb-6">
+                            The saga of Aeloria is far from over. New battles await, untold histories whisper from the ruins, and the Midnight Brew continues to carve its path through a broken world. Stay tuned for details on Book Three, "Echoes of the Undying," and various side stories exploring the lives and struggles of Arion's crew.
+                        </p>
+                        <i className="fas fa-hourglass-half text-rose-400 text-6xl mb-4"></i>
+                        <p className="text-gray-400 text-xl font-semibold">More to come...</p>
+                    </div>
+                </section>
+            );
+
+            // Lore Vault Page Component
+            const LoreVaultPage = () => (
+                <section className="main-content-area container mx-auto p-4 md:p-8 py-12">
+                    <h2 className="4xl font-bold font-spectral text-center text-rose-400 mb-12">The Lore Vault: Aeloria's Shattered Truths</h2>
+
+                    {/* World Overview */}
+                    <div className="bg-gray-800 rounded-xl shadow-lg p-6 md:p-10 mb-10 border border-gray-700 animate-fade-in">
+                        <h3 className="3xl font-bold font-spectral text-rose-300 mb-4">Aeloria: A World Forged in Ruin</h3>
+                        <p className="text-gray-200 leading-relaxed mb-4">
+                            Aeloria is a land scarred by the echoes of forgotten divinity and the devastation of ancient wars. Its cities lie in majestic ruin, monuments to a past both glorious and catastrophic. Magic here is raw, often dangerous, and tied directly to the land's fractured essence. The gods, once revered, are now either shattered whispers or forgotten names, their power fragmented and scattered. Survival is not a privilege, but a constant, brutal negotiation.
+                        </p>
+                        <p className="text-gray-200 leading-relaxed">
+                            The atmosphere is one of grim determination and weary resilience. Life persists in the shadows of giants, clinging to defiance against overwhelming odds. It's a world where "hope is dangerous," and pragmatism is the only true faith.
+                        </p>
+                    </div>
+
+                    {/* Key Factions/Concepts */}
+                    <div className="bg-gray-800 rounded-xl shadow-lg p-6 md:p-10 mb-10 border border-gray-700 animate-fade-in">
+                        <h3 className="text-3xl font-bold font-spectral text-rose-300 mb-4">The Midnight Brew</h3>
+                        <p className="text-gray-200 leading-relaxed mb-4">
+                            More than just a guild, Midnight Brew is a refuge for the broken, the cynical, and those who dare to spit in a god's eye. Founded in the aftermath of shattering betrayals, it's a collective of misfits who found family not in shared ideals, but in shared trauma and a mutual refusal to stay down. Their namesake brew is potent, unsettling, and requires a "stronger stomach"—much like the truths they uncover. They are the frontline of a new legend, built from wreckage rather than prophecy.
+                        </p>
+                    </div>
+
+                    {/* Character Profiles */}
+                    <h3 className="text-3xl font-bold font-spectral text-rose-300 text-center mb-8 mt-12">Key Characters</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        {/* Arion */}
+                        <div className="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700 animate-fade-in">
+                            <h4 className="text-2xl font-bold text-rose-200 mb-2">Arion (The Reluctant Hero)</h4>
+                            <p className="text-gray-400 text-sm mb-3">
+                                *Cynical Realist, Loyal to the Damned, Emotionally Repressed, Haunted by Loss*
+                            </p>
+                            <p className="text-gray-200 leading-snug">
+                                A former soldier in his late 20s, Arion is a master of dark humor and brutal honesty. He carries immense guilt and trauma, especially from the losses of Gisela, Luna, and Nanami. He fights not for glory, but for his chosen family (Nyx, Rhain, Ryn, Paige, Dark Lotus, Fenne, Le Maj). His primary goal is to bring his lost friends back from death. He believes "Hope is just a prettier way to lie."
+                            </p>
+                        </div>
+                        {/* Nyx */}
+                        <div className="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                            <h4 className="text-2xl font-bold text-rose-200 mb-2">Nyx</h4>
+                            <p className="text-gray-400 text-sm mb-3">*Fierce, Loyal, Arion's Anchor*</p>
+                            <p className="text-gray-200 leading-snug">
+                                One of Arion's wives and a vital part of his crew. Nyx is his anchor, providing a quiet strength and unwavering loyalty that helps him crack through his emotional armor. Her brilliance complements his brutal pragmatism.
+                            </p>
+                        </div>
+                        {/* Rhain */}
+                        <div className="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                            <h4 className="text-2xl font-bold text-rose-200 mb-2">Rhain</h4>
+                            <p className="text-gray-400 text-sm mb-3">*Calculated, Supportive, Arion's Anchor*</p>
+                            <p className="text-gray-200 leading-snug">
+                                Also one of Arion's wives, Rhain offers a different kind of support, perhaps more strategic or grounded. Together, she and Nyx form the bedrock of Arion's world, earning his implicit trust.
+                            </p>
+                        </div>
+                        {/* Ryn */}
+                        <div className="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+                            <h4 className="text-2xl font-bold text-rose-200 mb-2">Ryn</h4>
+                            <p className="text-gray-400 text-sm mb-3">*Instinct-Driven Survivor*</p>
+                            <p className="text-gray-200 leading-snug">
+                                A younger survivor, in whom Arion sees a reflection of his own instinct-driven need to survive. She represents the new generation learning to navigate Aeloria's treacherous landscape.
+                            </p>
+                        </div>
+                         {/* Paige */}
+                        <div className="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700 animate-fade-in" style={{ animationDelay: '0.4s' }}>
+                            <h4 className="text-2xl font-bold text-rose-200 mb-2">Paige</h4>
+                            <p className="text-gray-400 text-sm mb-3">*Strange Magic, Part of the Crew*</p>
+                            <p className="text-gray-200 leading-snug">
+                                A member of Midnight Brew known for her "strange magic." Arion respects her abilities and gives her space, considering her a valuable part of his found family. She's often the one to toast, "To bastards and brews."
+                            </p>
+                        </div>
+                        {/* Dark Lotus */}
+                        <div className="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700 animate-fade-in" style={{ animationDelay: '0.5s' }}>
+                            <h4 className="text-2xl font-bold text-rose-200 mb-2">Dark Lotus</h4>
+                            <p className="text-gray-400 text-sm mb-3">*Enigmatic, Part of the Crew*</p>
+                            <p className="text-gray-200 leading-snug">
+                                Another enigmatic member of Midnight Brew whose "strange magic" Arion respects. She's part of the core group that finds solace and purpose in the guild, often contributing with a chuckle, "To whatever comes next."
+                            </p>
+                        </div>
+                        {/* Fenne Lynfrost */}
+                        <div className="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700 animate-fade-in" style={{ animationDelay: '0.6s' }}>
+                            <h4 className="text-2xl font-bold text-rose-200 mb-2">Fenne Lynfrost</h4>
+                            <p className="text-gray-400 text-sm mb-3">*Musician, Grieving, Gruff Affection*</p>
+                            <p className="text-gray-200 leading-snug">
+                                A musician whose sorrowful tunes enthrall crowds, whispering of lost gods. Fenne is part of Arion's found family, earning his gruff affection despite her public grief and quiet nature. She's found by Midnight Brew, looking for her voice.
+                            </p>
+                        </div>
+                        {/* Le Maj */}
+                        <div className="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700 animate-fade-in" style={{ animationDelay: '0.7s' }}>
+                            <h4 className="text-2xl font-bold text-rose-200 mb-2">Le Maj</h4>
+                            <p className="text-gray-400 text-sm mb-3">*Eager, Aspiring Fighter, Gruff Affection*</p>
+                            <p className="text-gray-200 leading-snug">
+                                A youth eager to join Midnight Brew, captivated by their fighting prowess and defiance against gods. Le Maj is tolerated with gruff affection by Arion and the others, representing a newer, perhaps more naive, recruit.
+                            </p>
+                        </div>
+                        {/* Gisela, Luna, Nanami */}
+                        <div className="bg-gray-800 rounded-xl shadow-lg p-6 border border-gray-700 animate-fade-in" style={{ animationDelay: '0.8s' }}>
+                            <h4 className="text-2xl font-bold text-rose-200 mb-2">Gisela, Luna, & Nanami</h4>
+                            <p className="text-gray-400 text-sm mb-3">*Lost Friends, Arion's Motivation*</p>
+                            <p className="text-gray-200 leading-snug">
+                                These lost friends represent the deep guilt and driving motivation for Arion. Their deaths scar his every choice, and his primary goal in Book Two is to bring them back from death, even if it means storming the underworld.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+            );
+
+            // Interactive Hub Page Component
+            const InteractiveHubPage = () => (
+                <section className="main-content-area container mx-auto p-4 md:p-8 py-12">
+                    <h2 className="text-4xl font-bold font-spectral text-center text-rose-400 mb-8">The Interactive Hub</h2>
+                    <p className="text-center text-lg text-gray-300 mb-10 max-w-2xl mx-auto">
+                        Step into Aeloria. Forge art from chaos, seek cryptic wisdom from the Oracle, or engage directly with Arion himself.
+                    </p>
+
+                    <div className="w-full bg-gray-800 rounded-lg shadow-xl p-6 md:p-8 flex flex-col items-center border border-gray-700">
+                        {/* User ID Display */}
+                        {userId && (
+                          <p className="text-sm text-gray-500 text-center mb-4">
+                            Your User ID: <span className="font-mono text-xs break-all">{userId}</span>
+                          </p>
+                        )}
+
+                        <nav className="flex justify-center space-x-2 md:space-x-4 mb-6 w-full flex-wrap interactive-controls">
+                          <button
+                            onClick={() => {
+                              setCurrentInteractiveView('forge');
+                              setMessage('');
+                              setImagePromptInput('');
+                              setGeneratedImageUrl('');
+                              setIsGeneratingImage(false);
+                              setSubmissionTextInput('');
+                            }}
+                            className={`px-4 py-2 md:px-6 md:py-3 rounded-xl font-semibold transition-all duration-300 text-sm md:text-base ${
+                              currentInteractiveView === 'forge' ? 'bg-rose-600 text-white shadow-lg' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            }`}
+                          >
+                            The Forge
+                          </button>
+                          <button
+                            onClick={() => {
+                              setCurrentInteractiveView('oracle');
+                              setMessage('');
+                              setOracleQuestion('');
+                              setOracleAnswer(false);
+                              setIsGeneratingOracle(false);
+                            }}
+                            className={`px-4 py-2 md:px-6 md:py-3 rounded-xl font-semibold transition-all duration-300 text-sm md:text-base ${
+                              currentInteractiveView === 'oracle' ? 'bg-rose-600 text-white shadow-lg' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            }`}
+                          >
+                            Oracle of Echoes
+                          </button>
+                          <button
+                            onClick={() => {
+                              setCurrentInteractiveView('chat');
+                              setMessage('');
+                              setChatHistory([]);
+                              setUserMessage('');
+                              setIsSendingMessage(false);
+                            }}
+                            className={`px-4 py-2 md:px-6 md:py-3 rounded-xl font-semibold transition-all duration-300 text-sm md:text-base ${
+                              currentInteractiveView === 'chat' ? 'bg-rose-600 text-white shadow-lg' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                            }`}
+                          >
+                            Chat with Arion
+                          </button>
+                        </nav>
+                        {message && (
+                          <div className="bg-blue-600 text-white p-3 rounded-lg text-center mb-4 w-full transition-all duration-300">
+                            {message}
+                          </div>
+                        )}
+
+                        {/* Interactive Content Based on Tab */}
+                        {currentInteractiveView === 'forge' && (
+                            <div className="flex flex-col items-center w-full max-w-4xl">
+                                <h3 className="text-3xl font-semibold text-rose-300 mb-6">Forge Your Art from Chaos</h3>
+                                <p className="text-gray-300 text-center mb-6 max-w-2xl">
+                                    Enter a prompt, generate an image, and share your unique creation with the Gallery of Truths.
+                                </p>
+
+                                <div className="bg-gray-700 p-6 rounded-xl shadow-md w-full max-w-xl mb-6 border border-gray-600">
+                                    <h4 className="text-2xl font-bold text-gray-200 mb-4 text-center">Your Image Prompt:</h4>
+                                    <textarea
+                                        placeholder="Describe the image you want to forge (e.g., 'A warrior with a broken sword standing before a ruined city, dark fantasy style')."
+                                        value={imagePromptInput}
+                                        onChange={(e) => setImagePromptInput(e.target.value)}
+                                        rows="3"
+                                        className="w-full p-3 mb-3 bg-gray-600 text-gray-100 border border-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 resize-y"
+                                    ></textarea>
+                                    <button
+                                        onClick={handleGenerateImagePrompt}
+                                        className="w-full bg-gray-600 hover:bg-gray-500 text-white font-bold py-2 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-md mb-3"
+                                    >
+                                        Suggest a Prompt Idea
+                                    </button>
+                                    <button
+                                        onClick={handleGenerateImage}
+                                        disabled={isGeneratingImage}
+                                        className={`w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-md ${isGeneratingImage ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    >
+                                        {isGeneratingImage ? 'Forging Image...' : 'Forge Image'}
+                                    </button>
+
+                                    {isGeneratingImage && (
+                                        <div className="mt-6 text-center">
+                                            <p className="text-gray-400">Forging in progress, this may take a moment...</p>
+                                            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-rose-500 mx-auto mt-4"></div>
+                                        </div>
+                                    )}
+
+                                    {generatedImageUrl && (
+                                        <div className="mt-6 text-center animate-fade-in">
+                                            <h4 className="text-xl font-semibold text-gray-200 mb-3">Your Forged Image:</h4>
+                                            <img
+                                                src={generatedImageUrl}
+                                                alt={submissionTextInput || "Generated Art"}
+                                                className="w-full h-auto max-h-96 object-contain rounded-xl shadow-lg border border-gray-600"
+                                                onError={(e) => {
+                                                    e.target.onerror = null;
+                                                    e.target.src = "https://placehold.co/400x300/6b7280/F9FAFB?text=Image+Load+Error";
+                                                }}
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="w-full max-w-xl bg-gray-700 p-6 rounded-xl shadow-md mb-8 border border-gray-600">
+                                    <h4 className="text-2xl font-semibold text-gray-200 mb-4 text-center">Share Your Creation:</h4>
+                                    <textarea
+                                        placeholder="Add a brief description to your generated art (optional, but encouraged!)..."
+                                        value={submissionTextInput}
+                                        onChange={(e) => setSubmissionTextInput(e.target.value)}
+                                        rows="3"
+                                        className="w-full p-3 mb-3 bg-gray-600 text-gray-100 border border-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 resize-y"
+                                    ></textarea>
+                                    <button
+                                        onClick={handleChaosArtSubmission}
+                                        disabled={!generatedImageUrl && !submissionTextInput.trim()}
+                                        className={`w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-md ${(!generatedImageUrl && !submissionTextInput.trim()) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    >
+                                        Add to Gallery of Truths
+                                    </button>
+                                    {!submissionTextInput.trim() && !generatedImageUrl && (
+                                        <p className="text-sm text-gray-400 mt-2 text-center">Generate an image or add a description to submit.</p>
+                                    )}
+                                </div>
+
+                                <div className="w-full max-w-4xl">
+                                    <h3 className="text-3xl font-semibold text-rose-300 mb-6 text-center">Gallery of Truths: Reader Creations</h3>
+                                    {chaosArtSubmissions.length === 0 ? (
+                                        <p className="text-gray-400 text-center py-10">No art from chaos yet. Be the first to share your truth!</p>
+                                    ) : (
+                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                            {chaosArtSubmissions.map((submission) => (
+                                                <div key={submission.id} className="bg-gray-700 p-5 rounded-xl shadow-md border border-gray-600">
+                                                    <p className="text-gray-300 text-sm font-medium mb-2">
+                                                        By {submission.userName} <span className="text-gray-400 text-xs">on {submission.createdAt.toLocaleDateString()}</span>
+                                                    </p>
+                                                    {submission.submissionImageUrl && (
+                                                        <img
+                                                            src={submission.submissionImageUrl}
+                                                            alt={submission.submissionText || "Chaos Art"}
+                                                            className="w-full h-auto object-cover rounded-lg mb-3 border border-gray-600"
+                                                            onError={(e) => {
+                                                                e.target.onerror = null;
+                                                                e.target.src = "https://placehold.co/300x200/6b7280/F9FAFB?text=Image+Load+Error";
+                                                            }}
+                                                        />
+                                                    )}
+                                                    {submission.submissionText && (
+                                                        <p className="text-gray-100 leading-snug whitespace-pre-wrap">{submission.submissionText}</p>
+                                                    )}
+                                                    {!submission.submissionText && !submission.submissionImageUrl && (
+                                                        <p className="text-gray-400 italic">No description or image provided.</p>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+
+                        {currentInteractiveView === 'oracle' && (
+                            <div className="flex flex-col items-center w-full">
+                                <h3 className="text-3xl font-semibold text-rose-300 mb-6">Consult the Oracle of Echoes</h3>
+                                <p className="text-gray-300 text-center mb-6 max-w-2xl">
+                                    Seek guidance from the whispers of Aeloria's shattered past. Ask your question, and the Oracle will reveal a cryptic truth.
+                                </p>
+
+                                <div className="bg-gray-700 p-6 rounded-xl shadow-md w-full max-w-xl mb-6 border border-gray-600">
+                                    <h4 className="text-2xl font-bold text-gray-200 mb-4 text-center">Ask Your Question:</h4>
+                                    <textarea
+                                        placeholder="What hidden truth lies beneath the ruins of Eldoria? What is the cost of defying fate?"
+                                        value={oracleQuestion}
+                                        onChange={(e) => setOracleQuestion(e.target.value)}
+                                        rows="4"
+                                        className="w-full p-3 mb-4 bg-gray-600 text-gray-100 border border-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 resize-y"
+                                    ></textarea>
+                                    <button
+                                        onClick={handleGenerateOracleAnswer}
+                                        disabled={isGeneratingOracle}
+                                        className={`w-full bg-rose-600 hover:bg-rose-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-md ${isGeneratingOracle ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                    >
+                                        {isGeneratingOracle ? 'Sifting Echoes...' : 'Consult the Oracle'}
+                                    </button>
+                                </div>
+
+                                {oracleAnswer && (
+                                    <div className="bg-gray-700 p-6 rounded-xl shadow-lg w-full max-w-xl mt-6 animate-fade-in border-l-4 border-rose-500">
+                                        <h4 className="text-2xl font-semibold text-rose-300 mb-4 text-center">The Oracle Speaks:</h4>
+                                        <p className="text-xl text-gray-100 leading-relaxed italic text-center">
+                                            "{oracleAnswer}"
+                                        </p>
+                                        <button
+                                            onClick={() => {
+                                                const el = document.createElement('textarea');
+                                                el.value = oracleAnswer;
+                                                document.body.appendChild(el);
+                                                el.select();
+                                                document.execCommand('copy');
+                                                document.body.removeChild(el);
+                                                setMessage('Oracle\'s wisdom copied to clipboard!');
+                                            }}
+                                            className="mt-6 w-full bg-gray-600 hover:bg-gray-500 text-white font-semibold py-2 px-4 rounded-xl transition-all duration-300 text-sm"
+                                        >
+                                            Copy Prophecy
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {currentInteractiveView === 'chat' && (
+                            <div className="flex flex-col items-center w-full">
+                                <h3 className="text-3xl font-semibold text-rose-300 mb-6">Chat with Arion, The Reluctant Hero</h3>
+                                <p className="text-gray-300 text-center mb-6 max-w-2xl">
+                                    Ask him anything. But don't expect sunshine and rainbows. He might even comment on what you're currently reading on the site.
+                                </p>
+
+                                <div className="flex-1 w-full max-w-xl h-96 overflow-y-auto bg-gray-700 p-4 rounded-xl shadow-inner mb-6 space-y-4 custom-scrollbar border border-gray-600">
+                                  {chatHistory.length === 0 && (
+                                    <p className="text-gray-400 text-center italic py-4">
+                                      Arion grunts. "What? You gonna stare all day, or you got something to say?"
+                                    </p>
+                                  )}
+                                  {chatHistory.map((msg, index) => (
+                                    <div key={index} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                      <div className={`p-3 rounded-lg max-w-[80%] ${msg.role === 'user' ? 'bg-blue-600 text-white' : 'bg-gray-600 text-gray-100'}`}>
+                                        <span className="font-bold mr-2">{msg.role === 'user' ? 'You:' : 'Arion:'}</span>
+                                        {msg.text}
+                                      </div>
+                                    </div>
+                                  ))}
+                                  <div ref={chatMessagesEndRef} />
+                                </div>
+
+                                <div className="w-full max-w-xl flex items-center interactive-controls">
+                                  <textarea
+                                    placeholder="Arion, what's the meaning of life? (Keep it short, he's busy dying)"
+                                    value={userMessage}
+                                    onChange={(e) => setUserMessage(e.target.value)}
+                                    onKeyPress={(e) => {
+                                      if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleSendMessage();
+                                      }
+                                    }}
+                                    rows="2"
+                                    className="flex-1 p-3 mr-4 bg-gray-600 text-gray-100 border border-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+                                    disabled={isSendingMessage}
+                                  ></textarea>
+                                  <button
+                                    onClick={handleSendMessage}
+                                    disabled={isSendingMessage}
+                                    className={`bg-teal-600 hover:bg-teal-700 text-white font-bold py-3 px-6 rounded-xl transition-all duration-300 transform hover:scale-105 shadow-md ${isSendingMessage ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                  >
+                                    {isSendingMessage ? 'Muttering...' : 'Ask Arion'}
+                                  </button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </section>
+            );
+
+            // About J. Murphy Page Component
+            const AboutPage = () => (
+                <section className="main-content-area container mx-auto p-4 md:p-8 py-12">
+                    <h2 className="text-4xl font-bold font-spectral text-center text-rose-400 mb-12">About J. Murphy</h2>
+
+                    <div className="bg-gray-800 rounded-xl shadow-lg p-6 md:p-10 mb-10 flex flex-col items-center border border-gray-700 animate-fade-in">
+                        <img
+                            src="https://placehold.co/200x200/4B5563/F9FAFB?text=J.+Murphy"
+                            alt="J. Murphy"
+                            className="w-48 h-48 rounded-full object-cover mb-8 shadow-xl border-4 border-rose-500"
+                            onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/200x200/6b7280/F9FAFB?text=Author+Image"; }}
+                        />
+                        <h3 className="text-3xl font-bold font-spectral text-rose-300 mb-4 text-center">The Architect of Aeloria</h3>
+                        <p className="text-gray-200 leading-relaxed text-center max-w-2xl mb-6">
+                            J. Murphy is a master world-builder, a character specialist, and a narrative architect. With a passion for crafting vivid landscapes and deeply flawed, compelling characters, Murphy invites readers into worlds that are as beautiful as they are brutal. Inspired by epic tales and the complex tapestry of human resilience, their stories delve into the dark corners of survival, the messy truths of defiance, and the unexpected hope found in the most unlikely of heroes.
+                        </p>
+                        <p className="text-gray-200 leading-relaxed text-center max-w-2xl">
+                            A firm believer in "show, don't tell," J. Murphy strives for impeccable grammar, varied sentence structure, and a clarity that ensures every word carries weight. When not exploring the shattered realms of their imagination, Murphy can often be found engaging with their readers and seeking new ways to bring stories to life.
+                        </p>
+                        <div className="flex space-x-6 mt-8">
+                            <a href="#" className="text-rose-400 hover:text-rose-500 text-3xl transition-colors duration-200" aria-label="Goodreads"><i className="fab fa-goodreads"></i></a>
+                            <a href="#" className="text-rose-400 hover:text-rose-500 text-3xl transition-colors duration-200" aria-label="Twitter"><i className="fab fa-twitter"></i></a>
+                            <a href="#" className="text-rose-400 hover:text-rose-500 text-3xl transition-colors duration-200" aria-label="Instagram"><i className="fab fa-instagram"></i></a>
+                        </div>
+                    </div>
+                </section>
+            );
+
+            // Contact Page Component
+            const ContactPage = () => (
+                <section className="main-content-area container mx-auto p-4 md:p-8 py-12">
+                    <h2 className="text-4xl font-bold font-spectral text-center text-rose-400 mb-12">Connect with J. Murphy</h2>
+
+                    <div className="bg-gray-800 rounded-xl shadow-lg p-6 md:p-10 mb-10 border border-gray-700 animate-fade-in text-center max-w-2xl mx-auto">
+                        <p className="text-gray-200 leading-relaxed text-lg mb-6">
+                            Thank you for visiting Arion's Realm! I love hearing from readers. Whether you have a question about Aeloria, want to share your favorite character, or simply say hello, feel free to reach out.
+                        </p>
+
+                        <div className="flex flex-col space-y-4 mb-8">
+                            <p className="text-gray-300 text-xl font-semibold">
+                                <i className="fas fa-envelope text-rose-400 mr-3"></i> Email: <a href="mailto:contact@jmurphyauthor.com" className="text-blue-400 hover:underline">contact@jmurphyauthor.com</a>
+                            </p>
+                            <p className="text-gray-300 text-xl font-semibold">
+                                <i className="fas fa-book-open text-rose-400 mr-3"></i> For Rights & Media Inquiries: [Your Agent/Publicist Contact]
+                            </p>
+                        </div>
+
+                        <h3 className="text-2xl font-bold font-spectral text-rose-300 mb-4">Join the Midnight Brew Newsletter!</h3>
+                        <p className="text-gray-200 mb-6">
+                            Be the first to know about new releases, exclusive lore, behind-the-scenes glimpses, and special events. No spam, just the good stuff (and maybe a little chaos).
+                        </p>
+                        {/* Simple placeholder for newsletter sign-up. In a real app, integrate with Mailchimp/Substack. */}
+                        <form className="flex flex-col sm:flex-row gap-4 justify-center">
+                            <input
+                                type="email"
+                                placeholder="Your Email Address"
+                                className="p-3 rounded-lg bg-gray-700 text-gray-100 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-rose-500 flex-grow"
+                            />
+                            <button
+                                type="submit"
+                                onClick={(e) => { e.preventDefault(); alert('Newsletter sign-up is a placeholder. Integrate with your service!'); }}
+                                className="px-6 py-3 bg-rose-600 hover:bg-rose-700 text-white font-semibold rounded-xl shadow-md transition-all duration-300 transform hover:scale-105"
+                            >
+                                Subscribe <i className="fas fa-paper-plane ml-2"></i>
+                            </button>
+                        </form>
+                    </div>
+                </section>
+            );
+
+            // Blog/Updates Page Component
+            const BlogPage = () => (
+                <section className="main-content-area container mx-auto p-4 md:p-8 py-12">
+                    <h2 className="text-4xl font-bold font-spectral text-center text-rose-400 mb-12">Aeloria Dispatches: News & Updates</h2>
+
+                    <div className="bg-gray-800 rounded-xl shadow-lg p-6 md:p-10 mb-10 border border-gray-700 animate-fade-in text-center max-w-2xl mx-auto">
+                        <h3 className="text-3xl font-bold font-spectral text-rose-300 mb-4">Welcome to the Blog!</h3>
+                        <p className="text-gray-200 leading-relaxed mb-6">
+                            This is where J. Murphy will share the latest news from the world of Aeloria. Expect updates on new book releases, cover reveals, deleted scenes, character insights, event announcements, and musings on the craft of dark fantasy writing.
+                        </p>
+                        <i className="fas fa-feather-alt text-rose-400 text-6xl mb-4"></i>
+                        <p className="text-gray-400 text-xl font-semibold">First entry coming soon...</p>
+                        <p className="text-sm text-gray-500 mt-4">
+                            (This section is a placeholder. You can populate it with blog posts either manually or by integrating a headless CMS in the future).
+                        </p>
+                    </div>
+
+                    {/* Example Blog Post Placeholder */}
+                    <div className="bg-gray-800 rounded-xl shadow-lg p-6 md:p-8 mb-6 border border-gray-700 animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                        <h4 className="text-2xl font-bold text-rose-200 mb-2">The Spark of Midnight Brew</h4>
+                        <p className="text-gray-400 text-sm mb-3">Posted: May 15, 2025 | By J. Murphy</p>
+                        <p className="text-gray-200 leading-relaxed">
+                            Ever wondered how the infamous Midnight Brew guild came to be? It wasn't in some grand council chamber or sacred grove. It was born in the grime, in the defiance, in the shared understanding that sometimes, the only way forward is to burn everything down and build anew... <a href="#" className="text-blue-400 hover:underline">Read More</a>
+                        </p>
+                    </div>
+
+                    <div className="bg-gray-800 rounded-xl shadow-lg p-6 md:p-8 mb-6 border border-gray-700 animate-fade-in" style={{ animationDelay: '0.2s' }}>
+                        <h4 className="text-2xl font-bold text-rose-200 mb-2">Designing Aeloria: The Beauty of Ruin</h4>
+                        <p className="text-gray-400 text-sm mb-3">Posted: April 28, 2025 | By J. Murphy</p>
+                        <p className="text-gray-200 leading-relaxed">
+                            For Aeloria, I wanted a world that felt ancient, burdened, but still held a savage beauty. The ruins aren't just rubble; they're monuments to forgotten power, warnings carved in stone, and potential hiding places for secrets best left buried... <a href="#" className="text-blue-400 hover:underline">Read More</a>
+                        </p>
+                    </div>
+                </section>
+            );
+
+
+            // --- Main App Render ---
+            return (
+                <div className="min-h-screen flex flex-col">
+                    {/* Global Message Display */}
+                    {message && (
+                        <div className="fixed top-0 left-0 right-0 z-50 bg-blue-600 text-white p-3 text-center transition-all duration-300 shadow-lg">
+                            {message}
+                        </div>
+                    )}
+
+                    {/* Navigation Bar */}
+                    <header className="bg-gray-900 shadow-lg py-4 px-6 md:px-8 sticky top-0 z-40">
+                        <nav className="container mx-auto flex flex-col md:flex-row justify-between items-center">
+                            <div className="flex items-center mb-4 md:mb-0">
+                                {/* Using the Arion Logo image here */}
+                                <img
+                                    src="LOGO Arion .jpg"
+                                    alt="Arion The Reluctant Hero Logo"
+                                    className="h-10 w-auto mr-3"
+                                    onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/40x40/000/FFF?text=Logo"; }}
+                                />
+                                <h1 className="text-3xl font-bold font-spectral text-gray-100">J. Murphy</h1>
+                            </div>
+                            <ul className="flex flex-wrap justify-center md:space-x-6 space-x-3 text-lg font-semibold">
+                                <li>
+                                    <button onClick={() => setCurrentPage('home')}
+                                        className={`text-gray-300 hover:text-rose-400 transition-colors duration-200 ${currentPage === 'home' ? 'text-rose-400 border-b-2 border-rose-400' : ''}`}
+                                    >Home</button>
+                                </li>
+                                <li>
+                                    <button onClick={() => setCurrentPage('books')}
+                                        className={`text-gray-300 hover:text-rose-400 transition-colors duration-200 ${currentPage === 'books' ? 'text-rose-400 border-b-2 border-rose-400' : ''}`}
+                                    >Books</button>
+                                </li>
+                                <li>
+                                    <button onClick={() => setCurrentPage('lore')}
+                                        className={`text-gray-300 hover:text-rose-400 transition-colors duration-200 ${currentPage === 'lore' ? 'text-rose-400 border-b-2 border-rose-400' : ''}`}
+                                    >Lore Vault</button>
+                                </li>
+                                <li>
+                                    <button onClick={() => setCurrentPage('interactive')}
+                                        className={`text-gray-300 hover:text-rose-400 transition-colors duration-200 ${currentPage === 'interactive' ? 'text-rose-400 border-b-2 border-rose-400' : ''}`}
+                                    >Interactive Hub</button>
+                                </li>
+                                <li>
+                                    <button onClick={() => setCurrentPage('about')}
+                                        className={`text-gray-300 hover:text-rose-400 transition-colors duration-200 ${currentPage === 'about' ? 'text-rose-400 border-b-2 border-rose-400' : ''}`}
+                                    >About</button>
+                                </li>
+                                <li>
+                                    <button onClick={() => setCurrentPage('blog')}
+                                        className={`text-gray-300 hover:text-rose-400 transition-colors duration-200 ${currentPage === 'blog' ? 'text-rose-400 border-b-2 border-rose-400' : ''}`}
+                                    >Blog</button>
+                                </li>
+                                <li>
+                                    <button onClick={() => setCurrentPage('contact')}
+                                        className={`text-gray-300 hover:text-rose-400 transition-colors duration-200 ${currentPage === 'contact' ? 'text-rose-400 border-b-2 border-rose-400' : ''}`}
+                                    >Contact</button>
+                                </li>
+                            </ul>
+                        </nav>
+                    </header>
+
+                    {/* Main Content Area - Renders current page */}
+                    <main className="flex-grow">
+                        {(() => {
+                            switch (currentPage) {
+                                case 'home': return <HomePage />;
+                                case 'books': return <BooksPage />;
+                                case 'lore': return <LoreVaultPage />;
+                                case 'interactive': return <InteractiveHubPage />;
+                                case 'about': return <AboutPage />;
+                                case 'contact': return <ContactPage />;
+                                case 'blog': return <BlogPage />;
+                                default: return <HomePage />;
+                            }
+                        })()}
+                    </main>
+
+                    {/* Footer */}
+                    <footer className="bg-gray-900 text-gray-500 py-8 px-6 text-center shadow-inner">
+                        <div className="container mx-auto">
+                            <p className="mb-4">&copy; {new Date().getFullYear()} J. Murphy. All Rights Reserved.</p>
+                            <p className="text-sm">
+                                The Chronicles of Aeloria and all related characters and lore are property of J. Murphy. <br/>
+                                Designed with grit, magic, and a little bit of chaos.
+                            </p>
+                        </div>
+                    </footer>
+
+                    {/* Floating Arion AI Widget */}
+                    <div className="floating-arion" onClick={handleFloatingArionComment}>
+                        {showFloatingArionBubble && arionFloatingComment && (
+                            <div className="arion-bubble animate-fade-in">
+                                {arionFloatingComment}
+                            </div>
+                        )}
+                        <i className="fas fa-skull text-white text-3xl"></i> {/* Arion's Skull Icon */}
+                    </div>
+                </div>
+            );
+        }
+
+        // Mount the React App to the root div
+        // Using ReactDOM.createRoot for React 18
+        const root = ReactDOM.createRoot(document.getElementById('author-website-root'));
+        root.render(React.createElement(App));
+    </script>
+</body>
+</html>
