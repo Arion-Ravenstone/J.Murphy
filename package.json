@@ -1,0 +1,24 @@
+{
+  "name": "j.murphy",
+  "version": "1.0.0",
+  "description": "J. Murphy website",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Arion-Ravenstone/J.Murphy.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Arion-Ravenstone/J.Murphy/issues"
+  },
+  "homepage": "https://github.com/Arion-Ravenstone/J.Murphy#readme",
+  "dependencies": {
+    "@firebase/ai": "^1.4.0",
+    "@firebase/app-compat": "^0.4.1",
+    "firebase": "^11.9.1"
+  }
+}
