@@ -1127,35 +1127,35 @@
                 clearTimeout(promptTimeoutRef.current);
 
                 // Option 1: Use a hardcoded random echo for simplicity and to avoid LLM calls
-                const randomStaticEcho = echoesData[Math.floor(Math.random() * echoesData.length)];
-                setCurrentEcho(randomStaticEcho);
-                echoTimeoutRef.current = setTimeout(() => setCurrentEcho(null), 8000); // Display for 8 seconds
+                //const randomStaticEcho = echoesData[Math.floor(Math.random() * echoesData.length)];
+                //setCurrentEcho(randomStaticEcho);
+                //echoTimeoutRef.current = setTimeout(() => setCurrentEcho(null), 8000); // Display for 8 seconds
 
 
                 // Option 2 (More complex, but dynamic): Generate an echo using AI
-                // const prompt = `As Arion, generate a single, very brief (1-2 sentences), cynical, world-weary, or philosophical lore snippet about the nature of survival, hope, loss, or defiance in a dark fantasy world. Example: "Hope? That's a luxury for the dead." Or "The ruins whisper of old gods. They mostly complain."
-                // Ensure it sounds like Arion. Do not use quotes around the entire message.`;
-                // try {
-                //     const payload = { contents: [{ role: "user", parts: [{ text: arionPersonaPrompt + "\n\n" + prompt }] }] };
-                //     const apiKey = "AIzaSyDauaoyAjCocNtUyojbvZPVZaKSqpQPT1k";
-                //     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
-                //     const response = await fetch(apiUrl, {
-                //         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-                //     });
-                //     const result = await response.json();
-                //     if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
-                //         setCurrentEcho(result.candidates[0].content.parts[0].text);
-                //         echoTimeoutRef.current = setTimeout(() => setCurrentEcho(null), 8000); // Display for 8 seconds
-                //     } else {
-                //         console.warn("Failed to generate ephemeral echo.");
-                //         setCurrentEcho(echoesData[Math.floor(Math.random() * echoesData.length)]); // Fallback
-                //         echoTimeoutRef.current = setTimeout(() => setCurrentEcho(null), 8000);
-                //     }
-                // } catch (error) {
-                //     console.error("Error generating ephemeral echo:", error);
-                //     setCurrentEcho(echoesData[Math.floor(Math.random() * echoesData.length)]); // Fallback
-                //     echoTimeoutRef.current = setTimeout(() => setCurrentEcho(null), 8000);
-                // }
+                const prompt = `As Arion, generate a single, very brief (1-2 sentences), cynical, world-weary, or philosophical lore snippet about the nature of survival, hope, loss, or defiance in a dark fantasy world. Example: "Hope? That's a luxury for the dead." Or "The ruins whisper of old gods. They mostly complain."
+                Ensure it sounds like Arion. Do not use quotes around the entire message.`;
+                try {
+                     const payload = { contents: [{ role: "user", parts: [{ text: arionPersonaPrompt + "\n\n" + prompt }] }] };
+                     const apiKey = "AIzaSyDauaoyAjCocNtUyojbvZPVZaKSqpQPT1k";
+                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+                     const response = await fetch(apiUrl, {
+                         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+                     });
+                     const result = await response.json();
+                     if (result.candidates && result.candidates.length > 0 && result.candidates[0].content && result.candidates[0].content.parts && result.candidates[0].content.parts.length > 0) {
+                         setCurrentEcho(result.candidates[0].content.parts[0].text);
+                         echoTimeoutRef.current = setTimeout(() => setCurrentEcho(null), 8000); // Display for 8 seconds
+                     } else {
+                         console.warn("Failed to generate ephemeral echo.");
+                         setCurrentEcho(echoesData[Math.floor(Math.random() * echoesData.length)]); // Fallback
+                         echoTimeoutRef.current = setTimeout(() => setCurrentEcho(null), 8000);
+                     }
+                 } catch (error) {
+                     console.error("Error generating ephemeral echo:", error);
+                     setCurrentEcho(echoesData[Math.floor(Math.random() * echoesData.length)]); // Fallback
+                     echoTimeoutRef.current = setTimeout(() => setCurrentEcho(null), 8000);
+                 }
             }, [isAuthReady, currentUser, arionPersonaPrompt, echoesData]); // Removed currentPage from deps as echoes are global
 
             useEffect(() => {
