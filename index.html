@@ -122,7 +122,7 @@
         /* Hero section specific styles for background image */
         .hero-background {
             /* UPDATED: Using the Canvas-provided URL for the uploaded official banner image */
-            background-image: url('uploaded:offical banner Arion .jpg-352c2158-a61c-4489-9629-64652cc38a7a');
+            background-image: url('./offical_banner_Arion_.png');
             background-size: cover;
             background-position: center;
             background-attachment: fixed; /* Parallax effect */
@@ -448,7 +448,7 @@
                         }
                     };
 
-                    const apiKey = "AIzaSyCjN_h7eNkPngQfMeZNj-9UhmU641cJ7WE"; // Canvas will provide this in runtime
+                    const apiKey = "AIzaSyDNqjpN9Vc9Zig7hKp_ehnTsLUkv_xmQAA"; // Canvas will provide this in runtime
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                     const response = await fetch(apiUrl, {
@@ -492,7 +492,7 @@
                 try {
                     const fullPrompt = `${arionPersonaPrompt}\n\nScenario Choice Consequence: ${choicePrompt}`;
                     const payload = { contents: [{ role: "user", parts: [{ text: fullPrompt }] }] };
-                    const apiKey = "AIzaSyCjN_h7eNkPngQfMeZNj-9UhmU641cJ7WE"; // Canvas will provide this in runtime
+                    const apiKey = "AIzaSyDNqjpN9Vc9Zig7hKp_ehnTsLUkv_xmQAA"; // Canvas will provide this in runtime
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                     const response = await fetch(apiUrl, {
@@ -621,7 +621,7 @@
 
                 try {
                     const payload = { instances: { prompt: imagePromptInput }, parameters: { "sampleCount": 1} };
-                    const apiKey = "AIzaSyCjN_h7eNkPngQfMeZNj-9UhmU641cJ7WE"
+                    const apiKey = "AIzaSyDNqjpN9Vc9Zig7hKp_ehnTsLUkv_xmQAA"
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=${apiKey}`;
 
                     const response = await fetch(apiUrl, {
@@ -817,7 +817,7 @@
 
                     let chatContext = [{ role: "user", parts: [{ text: prompt }] }];
                     const payload = { contents: chatContext };
-                    const apiKey = "AIzaSyCjN_h7eNkPngQfMeZNj-9UhmU641cJ7WE"
+                    const apiKey = "AIzaSyDNqjpN9Vc9Zig7hKp_ehnTsLUkv_xmQAA"
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                     const response = await fetch(apiUrl, {
@@ -943,7 +943,7 @@
                     conversationToSend.push({ role: 'user', parts: [{ text: arionPersonaPrompt + "\n\n" + contextMessage + "\n\nUser: " + newUserMessage.text }] });
 
                     const payload = { contents: conversationToSend };
-                    const apiKey = "AIzaSyCjN_h7eNkPngQfMeZNj-9UhmU641cJ7WE"
+                    const apiKey = "AIzaSyDNqjpN9Vc9Zig7hKp_ehnTsLUkv_xmQAA"
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                     const response = await fetch(apiUrl, {
@@ -1376,7 +1376,7 @@
 
                 try {
                     const payload = { contents: [{ role: "user", parts: [{ text: arionPersonaPrompt + "\n\n" + prompt }] }] };
-                    const apiKey = "AIzaSyCjN_h7eNkPngQfMeZNj-9UhmU641cJ7WE"
+                    const apiKey = "AIzaSyDNqjpN9Vc9Zig7hKp_ehnTsLUkv_xmQAA"
                     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
                     const response = await fetch(apiUrl, {
@@ -1955,7 +1955,7 @@
                                 {/* Using the Arion Logo image here */}
                                 {/* UPDATED: Using the Canvas-provided URL for the uploaded logo image */}
                                 <img
-                                    src="uploaded:LOGO Arion .jpg-91557c92-82a9-4602-a414-2ce6ae99a732"
+                                    src="./LOGO_Arion_.jpg"
                                     alt="Arion The Reluctant Hero Logo"
                                     className="h-10 w-auto mr-3"
                                     onError={(e) => { e.target.onerror = null; e.target.src = "https://placehold.co/40x40/000/FFF?text=Logo"; }}
