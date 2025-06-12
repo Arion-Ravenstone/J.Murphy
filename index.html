@@ -1133,12 +1133,6 @@
                                     placeholder="Arion, what's the meaning of life? (Keep it short, he's busy dying)"
                                     value={userMessage}
                                     onChange={(e) => setUserMessage(e.target.value)}
-                                    onKeyPress={(e) => {
-                                      if (e.key === 'Enter' && !e.shiftKey) {
-                                        e.preventDefault();
-                                        handleSendMessage();
-                                      }
-                                    }}
                                     rows="2"
                                     className="flex-1 p-3 mr-4 bg-gray-600 text-gray-100 border border-gray-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
                                     disabled={isSendingMessage}
